@@ -11,4 +11,4 @@ list(APPEND SRC
 
 list(APPEND RES ./res/icon.png)
 blink_plugin_add_effect("saturator" "${SRC}" "${RES}")
-target_include_directories(blockhead-blink-plugins-effect-saturator PRIVATE ../..)
+target_include_directories(effect_saturator PRIVATE ../..)

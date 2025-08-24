@@ -12,4 +12,4 @@ list(APPEND SRC
 
 list(APPEND RES ./res/icon.png)
 blink_plugin_add_effect("tract" "${SRC}" "${RES}")
-target_include_directories(blockhead-blink-plugins-effect-tract PRIVATE ../..)
+target_include_directories(effect_tract PRIVATE ../..)

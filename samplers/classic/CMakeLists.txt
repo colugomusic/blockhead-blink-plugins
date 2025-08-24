@@ -13,4 +13,4 @@ list(APPEND SRC
 )
 
 blink_plugin_add_sampler("classic" "${SRC}" "")
-target_include_directories(blockhead-blink-plugins-sampler-classic PRIVATE ../..)
+target_include_directories(sampler_classic PRIVATE ../..)

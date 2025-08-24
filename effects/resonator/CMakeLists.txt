@@ -12,4 +12,4 @@ list(APPEND SRC
 
 list(APPEND RES ./res/icon.png)
 blink_plugin_add_effect("resonator" "${SRC}" "${RES}")
-target_include_directories(blockhead-blink-plugins-effect-resonator PRIVATE ../..)
+target_include_directories(effect_resonator PRIVATE ../..)

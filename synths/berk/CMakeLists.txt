@@ -12,4 +12,4 @@ list(APPEND SRC
 
 list(APPEND RES ./res/icon.png)
 blink_plugin_add_synth("berk" "${SRC}" "${RES}")
-target_include_directories(blockhead-blink-plugins-synth-berk PRIVATE ../..)
+target_include_directories(synth_berk PRIVATE ../..)

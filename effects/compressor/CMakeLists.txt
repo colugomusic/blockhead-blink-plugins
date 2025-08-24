@@ -12,4 +12,4 @@ list(APPEND SRC
 
 list(APPEND RES ./res/icon.png)
 blink_plugin_add_effect("compressor" "${SRC}" "${RES}")
-target_include_directories(blockhead-blink-plugins-effect-compressor PRIVATE ../..)
+target_include_directories(effect_compressor PRIVATE ../..)

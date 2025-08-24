@@ -11,4 +11,4 @@ list(APPEND SRC
 
 list(APPEND RES ./res/icon.png)
 blink_plugin_add_effect("gainer" "${SRC}" "${RES}")
-target_include_directories(blockhead-blink-plugins-effect-gainer PRIVATE ../..)
+target_include_directories(effect_gainer PRIVATE ../..)

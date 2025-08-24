@@ -12,4 +12,4 @@ list(APPEND SRC
 
 list(APPEND RES ./res/icon.png)
 blink_plugin_add_effect("freeze" "${SRC}" "${RES}")
-target_include_directories(blockhead-blink-plugins-effect-freeze PRIVATE ../..)
+target_include_directories(effect_freeze PRIVATE ../..)

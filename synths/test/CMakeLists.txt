@@ -13,4 +13,4 @@ list(APPEND SRC
 
 list(APPEND RES ./res/icon.png)
 blink_plugin_add_synth("test" "${SRC}" "${RES}")
-target_include_directories(blockhead-blink-plugins-synth-test PRIVATE ../..)
+target_include_directories(synth_test PRIVATE ../..)

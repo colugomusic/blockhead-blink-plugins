@@ -11,4 +11,4 @@ list(APPEND SRC
 
 list(APPEND RES ./res/icon.png)
 blink_plugin_add_effect("ring_modulator" "${SRC}" "${RES}")
-target_include_directories(blockhead-blink-plugins-effect-ring_modulator PRIVATE ../..)
+target_include_directories(effect_ring_modulator PRIVATE ../..)

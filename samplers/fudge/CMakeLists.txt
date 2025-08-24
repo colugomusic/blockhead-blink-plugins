@@ -18,4 +18,4 @@ list(APPEND SRC
 )
 
 blink_plugin_add_sampler("fudge" "${SRC}" "")
-target_include_directories(blockhead-blink-plugins-sampler-fudge PRIVATE ..  ../..)
+target_include_directories(sampler_fudge PRIVATE ..  ../..)
