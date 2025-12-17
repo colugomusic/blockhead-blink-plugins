@@ -4,6 +4,7 @@
 #include <blink/sample_data.hpp>
 #include <blink/search.hpp>
 #include <snd/ease.hpp>
+#include <snd/frame-pos.hpp>
 #include "model.h"
 
 namespace dsp {
@@ -54,7 +55,7 @@ auto make_audio_data(const Model& model, const blink_UniformParamData* param_dat
 }
 
 [[nodiscard]]
-auto process_stereo_sample(const blink::SampleData& sample_data, const snd::transport::DSPVectorFramePosition &sample_pos, bool loop) -> ml::DSPVectorArray<2> {
+auto process_stereo_sample(const blink::SampleData& sample_data, const snd::frame_vec<64> &sample_pos, bool loop) -> ml::DSPVectorArray<2> {
 	ml::DSPVectorArray<2> out;
 	switch (sample_data.get_channel_mode()) {
 		default:
@@ -74,7 +75,7 @@ auto process_stereo_sample(const blink::SampleData& sample_data, const snd::tran
 }
 
 [[nodiscard]]
-auto process_mono_sample(const blink::SampleData& sample_data, const snd::transport::DSPVectorFramePosition& sample_pos, bool loop) -> ml::DSPVectorArray<2> {
+auto process_mono_sample(const blink::SampleData& sample_data, const snd::frame_vec<64>& sample_pos, bool loop) -> ml::DSPVectorArray<2> {
 	return ml::repeatRows<2>(sample_data.read_frames_interp({0}, sample_pos, loop));
 }
 
@@ -84,7 +85,7 @@ auto process_sample(
 	const blink_SamplerVaryingData& varying,
 	const blink_SamplerUniformData& uniform,
 	const blink::SampleData& sample_data,
-	snd::transport::DSPVectorFramePosition sample_pos) -> ml::DSPVectorArray<2>
+	snd::frame_vec<64> sample_pos) -> ml::DSPVectorArray<2>
 {
 	sample_pos /= float(uniform.base.song_rate.value) / varying.sample_info->SR.value;
 	if (data.toggle.reverse.value) {
@@ -113,7 +114,7 @@ auto apply_correction_grains(
 		return dry;
 	}
 	auto grains_remaining = grain_info.count;
-	snd::transport::DSPVectorFramePosition grain_positions;
+	snd::frame_vec<64> grain_positions;
 	ml::DSPVector xfade;
 	for (int i = 0; i < BLINK_VECTOR_SIZE; i++) {
 		if (reverse_correction->grain.on) {
