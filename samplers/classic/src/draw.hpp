@@ -73,27 +73,27 @@ auto draw(Model* model, const blink_SamplerVaryingData& varying, const blink_Sam
 			}
 		} 
 		if (data.toggle.reverse.value) {
-			final_sample_positions = std::int32_t(sample_data.get_num_frames().value - 1) - final_sample_positions;
+			final_sample_positions = static_cast<double>(sample_data.get_num_frames().value - 1) - final_sample_positions;
 		}
 		if (out->sculpted_block_positions) {
-			const auto doubles = model->draw.tape_transformer.get_pitched_positions().positions.as_doubles();
-			std::copy(doubles[0].data(), doubles[0].data() + count, out->sculpted_block_positions + index);
+			const auto doubles = model->draw.tape_transformer.get_pitched_positions().positions;
+			std::copy(doubles.data(), doubles.data() + count, out->sculpted_block_positions + index);
 		} 
 		if (out->sculpted_sample_positions) {
-			const auto doubles = sculpted_sample_positions.as_doubles();
-			std::copy(doubles[0].data(), doubles[0].data() + count, out->sculpted_sample_positions + index);
+			const auto doubles = sculpted_sample_positions;
+			std::copy(doubles.data(), doubles.data() + count, out->sculpted_sample_positions + index);
 		}
 		if (out->warped_block_positions) {
-			const auto doubles = model->draw.tape_transformer.get_warped_positions().positions.as_doubles(); 
-			std::copy(doubles[0].data(), doubles[0].data() + count, out->warped_block_positions + index);
+			const auto doubles = model->draw.tape_transformer.get_warped_positions().positions; 
+			std::copy(doubles.data(), doubles.data() + count, out->warped_block_positions + index);
 		} 
 		if (out->warped_sample_positions) {
-			const auto doubles = warped_sample_positions.as_doubles();
-			std::copy(doubles[0].data(), doubles[0].data() + count, out->warped_sample_positions + index);
+			const auto doubles = warped_sample_positions;
+			std::copy(doubles.data(), doubles.data() + count, out->warped_sample_positions + index);
 		} 
 		if (out->final_sample_positions) {
-			const auto doubles = final_sample_positions.as_doubles();
-			std::copy(doubles[0].data(), doubles[0].data() + count, out->final_sample_positions + index);
+			const auto doubles = final_sample_positions;
+			std::copy(doubles.data(), doubles.data() + count, out->final_sample_positions + index);
 		} 
 		if (out->waveform_derivatives) {
 			const auto& pitched_derivatives = model->draw.tape_transformer.get_pitched_derivatives();

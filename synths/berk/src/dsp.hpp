@@ -106,8 +106,8 @@ auto make_input_values(const Model& model, const blink_UniformParamData& param_d
 auto process(Model* model, UnitDSP* unit_dsp, const blink_VaryingData& varying, const blink_UniformData& uniform, float* out) -> blink_Error {
 	unit_dsp->block_positions.add(varying.positions, BLINK_VECTOR_SIZE);
 	const auto input_values = make_input_values(*model, *uniform.param_data, unit_dsp->block_positions);
-	const auto min_position = ml::min(ml::intToFloat(unit_dsp->block_positions.positions.pos));
-	const auto gate = min_position >= -uniform.data_offset;
+	const auto min_position = min(unit_dsp->block_positions.positions);
+	const auto gate = min_position >= snd::frame_pos(-uniform.data_offset);
 	const auto model_SR = int(std::pow(2.0f, input_values.env.quality - 1.0f) * 44100.0f);
 	const auto speed = float(model_SR) / unit_dsp->SR.value;
 	auto source = [&]() {

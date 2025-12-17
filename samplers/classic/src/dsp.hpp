@@ -137,7 +137,7 @@ auto apply_correction_grains(
 				reverse_correction->grain.pos = beg;
 				reverse_correction->grain.ff = grain_info.ff[i] * a * b;
 				reverse_correction->grain.vpos = beg;
-				reverse_correction->grain.vend = beg + grain_info.length[i];
+				reverse_correction->grain.vend = float(double(beg)) + grain_info.length[i];
 				reverse_correction->grain.vff = std::abs(grain_info.ff[i]);
 				grain_positions.set(i, reverse_correction->grain.pos);
 				xfade[i] = snd::ease::quadratic::in_out(snd::inverse_lerp(reverse_correction->grain.beg, reverse_correction->grain.vend, reverse_correction->grain.vpos));

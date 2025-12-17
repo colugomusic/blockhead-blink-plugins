@@ -59,7 +59,7 @@ auto process(Model* model, UnitDSP* unit_dsp, const blink_VaryingData& varying, 
 	} 
 	const auto& block_pos = unit_dsp->block_positions; 
 	for (int i = 0; i < kFloatsPerDSPVector; i++) {
-		if (block_pos[i - 1] < 0 && block_pos[i] >= 0) {
+		if (block_pos[i - 1] < snd::frame_pos{0} && block_pos[i] >= snd::frame_pos{0}) {
 			reset(model, unit_dsp);
 		} 
 		for (int c = 0; c < 2; c++) {

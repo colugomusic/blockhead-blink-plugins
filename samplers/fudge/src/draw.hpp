@@ -67,9 +67,9 @@ auto draw(Model* model, const blink_SamplerVaryingData& varying, const blink_Sam
 		config.outputs.derivatives.sped = true;
 		config.outputs.derivatives.warped = true;
 		model->draw.stretch_transformer(config, block_positions, count);
-		auto sculpted_sample_positions = model->draw.stretch_transformer.get_sped_positions().positions / (float(uniform.base.song_rate.value) / sample_data.get_SR().value);
-		auto warped_sample_positions = model->draw.stretch_transformer.get_warped_positions().positions / (float(uniform.base.song_rate.value) / sample_data.get_SR().value);
-		auto final_sample_positions = model->draw.stretch_transformer.get_reversed_positions().positions / (float(uniform.base.song_rate.value) / sample_data.get_SR().value);
+		auto sculpted_sample_positions = model->draw.stretch_transformer.get_sped_positions().positions / (double(uniform.base.song_rate.value) / sample_data.get_SR().value);
+		auto warped_sample_positions = model->draw.stretch_transformer.get_warped_positions().positions / (double(uniform.base.song_rate.value) / sample_data.get_SR().value);
+		auto final_sample_positions = model->draw.stretch_transformer.get_reversed_positions().positions / (double(uniform.base.song_rate.value) / sample_data.get_SR().value);
 		if (data.toggle.loop.value) {
 			for (int i = 0; i < count; i++) {
 				final_sample_positions.set(i, sample_data.get_loop_pos(final_sample_positions[i]));
@@ -79,24 +79,24 @@ auto draw(Model* model, const blink_SamplerVaryingData& varying, const blink_Sam
 			final_sample_positions = std::int32_t(sample_data.get_num_frames().value - 1) - final_sample_positions;
 		}
 		if (out->sculpted_block_positions) {
-			const auto doubles = model->draw.stretch_transformer.get_sped_positions().positions.as_doubles(); 
-			std::copy(doubles[0].data(), doubles[0].data() + count, out->sculpted_block_positions + index);
+			const auto doubles = model->draw.stretch_transformer.get_sped_positions().positions; 
+			std::copy(doubles.data(), doubles.data() + count, out->sculpted_block_positions + index);
 		} 
 		if (out->sculpted_sample_positions) {
-			const auto doubles = sculpted_sample_positions.as_doubles(); 
-			std::copy(doubles[0].data(), doubles[0].data() + count, out->sculpted_sample_positions + index);
+			const auto doubles = sculpted_sample_positions; 
+			std::copy(doubles.data(), doubles.data() + count, out->sculpted_sample_positions + index);
 		} 
 		if (out->warped_block_positions) {
-			const auto doubles = model->draw.stretch_transformer.get_warped_positions().positions.as_doubles(); 
-			std::copy(doubles[0].data(), doubles[0].data() + count, out->warped_block_positions + index);
+			const auto doubles = model->draw.stretch_transformer.get_warped_positions().positions; 
+			std::copy(doubles.data(), doubles.data() + count, out->warped_block_positions + index);
 		} 
 		if (out->warped_sample_positions) {
-			const auto doubles = warped_sample_positions.as_doubles(); 
-			std::copy(doubles[0].data(), doubles[0].data() + count, out->warped_sample_positions + index);
+			const auto doubles = warped_sample_positions; 
+			std::copy(doubles.data(), doubles.data() + count, out->warped_sample_positions + index);
 		} 
 		if (out->final_sample_positions) {
-			const auto doubles = final_sample_positions.as_doubles(); 
-			std::copy(doubles[0].data(), doubles[0].data() + count, out->final_sample_positions + index);
+			const auto doubles = final_sample_positions; 
+			std::copy(doubles.data(), doubles.data() + count, out->final_sample_positions + index);
 		} 
 		if (out->waveform_derivatives) {
 			const auto& sped_derivatives = model->draw.stretch_transformer.get_sped_derivatives();

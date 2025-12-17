@@ -174,8 +174,8 @@ auto process(Model* model, blink_UnitIdx unit_idx, InstanceDSP* instance_dsp, Un
 	for (int i = 0; i < kFloatsPerDSPVector; i++) {
 		if (*instance_dsp->master_unit == unit_idx) {
 			if (!unit_dsp->record) {
-				const auto local_block_position = unit_dsp->block_positions.positions[i] + int32_t(uniform.data_offset); 
-				if (local_block_position >= 0) {
+				const auto local_block_position = unit_dsp->block_positions.positions[i] + snd::frame_pos(uniform.data_offset); 
+				if (local_block_position >= snd::frame_pos{0}) {
 					unit_dsp->record = true;
 					unit_dsp->particle.queue_reset = true;
 				}

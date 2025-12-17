@@ -61,8 +61,8 @@ auto process(Model* model, UnitDSP* unit_dsp, const blink_VaryingData& varying, 
 	static const ml::DSPVector MAX_TONGUE_POSITION(29.0f);
 	static const ml::DSPVector MIN_TONGUE_DIAMETER(2.05f);
 	static const ml::DSPVector MAX_TONGUE_DIAMETER(3.5f);
-	const auto min_position = ml::min(ml::intToFloat(unit_dsp->block_positions.positions.pos));
-	const auto gate = min_position >= 0.0f; 
+	const auto min_position = min(unit_dsp->block_positions.positions);
+	const auto gate = min_position >= snd::frame_pos{0};
 	ml::DSPVectorArray<2> in_vec(in); 
 	unit_dsp->input_buffer->write(in_vec); 
 	const auto model_SR = int(std::pow(2.0f, quality - 1.0f) * float(BASE_MODEL_SR));
