@@ -3,9 +3,9 @@
 #include <blink/plugin_impl.hpp>
 #include <snd/audio/feedback_delay.hpp>
 #include <snd/audio/filter/1-pole.hpp>
-#pragma warning(push, 0)
+BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPGens.h>
-#pragma warning(pop)
+BLINK_QUIET_INCLUDE_END
 
 struct Params {
 	struct {

@@ -1,11 +1,12 @@
 #pragma once
 
 #include <blink/effect_unit.hpp>
+#include <blink/quiet-include.hpp>
 
-#pragma warning(push, 0)
+BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPFilters.h>
 #include <DSP/MLDSPGens.h>
-#pragma warning(pop)
+BLINK_QUIET_INCLUDE_END
 
 namespace lowpass {
 

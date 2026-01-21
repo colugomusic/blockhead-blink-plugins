@@ -5,14 +5,15 @@
 #include <blink.h>
 #include <blink/plugin_impl.hpp>
 #include <blink/transform/stretch.hpp>
+#include <blink/quiet-include.hpp>
 #include <map>
 #include <memory>
 #include <snd/audio/fudge.hpp>
 #include <snd/audio/scale.hpp>
-#pragma warning(push, 0)
+BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPFilters.h>
 #include <DSP/MLDSPGens.h>
-#pragma warning(pop)
+BLINK_QUIET_INCLUDE_END
 
 struct Params {
 	struct {

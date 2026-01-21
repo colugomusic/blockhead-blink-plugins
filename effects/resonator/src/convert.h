@@ -2,9 +2,10 @@
 
 #include <cstdint>
 #include <blink/const_math.hpp>
-#pragma warning(push, 0)
+#include <blink/quiet-include.hpp>
+BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPOps.h>
-#pragma warning(pop)
+BLINK_QUIET_INCLUDE_END
 
 namespace convert {
 

@@ -4,10 +4,10 @@
 #include <snd/audio/filter/tract.hpp>
 #include <snd/audio/glottis.hpp>
 #include <snd/resampler.hpp>
-#pragma warning(push, 0)
+BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPFilters.h>
 #include <DSP/MLDSPGens.h>
-#pragma warning(pop)
+BLINK_QUIET_INCLUDE_END
 
 struct Params {
 	struct {

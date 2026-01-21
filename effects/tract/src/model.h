@@ -3,9 +3,9 @@
 #include <blink/plugin_impl.hpp>
 #include <snd/audio/filter/tract.hpp>
 #include <snd/resampler.hpp>
-#pragma warning(push, 0)
+BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPBuffer.h>
-#pragma warning(pop)
+BLINK_QUIET_INCLUDE_END
 
 struct Params {
 	struct {
