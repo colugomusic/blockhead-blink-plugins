@@ -3,6 +3,8 @@
 #include <blink/plugin_impl.hpp>
 #include <snd/audio/wavebender.hpp>
 
+namespace wavebender_fx {
+
 struct Params {
 	struct {
 		blink_ParamIdx tilt;
@@ -31,3 +33,6 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace wavebender_fx
+

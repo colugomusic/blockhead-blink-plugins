@@ -2,6 +2,8 @@
 
 #include <blink/data.hpp>
 
+namespace fudge_sampler {
+
 struct AudioData {
 	struct {
 		blink::uniform::Chord scale;
@@ -37,3 +39,6 @@ struct AudioData {
 	} toggle;
 	const blink_WarpPoints* warp_points;
 };
+
+} // namespace fudge_sampler
+

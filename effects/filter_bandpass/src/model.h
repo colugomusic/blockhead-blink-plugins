@@ -5,6 +5,8 @@ BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPFilters.h>
 BLINK_QUIET_INCLUDE_END
 
+namespace filter_bandpass {
+
 struct Params {
 	struct {
 		blink_ParamIdx frequency;
@@ -27,3 +29,5 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace filter_bandpass

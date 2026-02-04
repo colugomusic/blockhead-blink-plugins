@@ -6,6 +6,8 @@ BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPGens.h>
 BLINK_QUIET_INCLUDE_END
 
+namespace spring_reverb {
+
 struct Params {
 	struct {
 		blink_ParamIdx size;
@@ -34,3 +36,5 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace spring_reverb

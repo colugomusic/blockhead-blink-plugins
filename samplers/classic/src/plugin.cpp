@@ -5,6 +5,8 @@
 #include "dsp.hpp"
 #include "model.h"
 
+using namespace classic_sampler;
+
 static Model model;
 
 using namespace blink;

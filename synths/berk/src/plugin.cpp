@@ -5,6 +5,8 @@
 #include "model.h"
 #include "shared/tract_params.hpp"
 
+using namespace berk_synth;
+
 static Model model;
 
 using namespace blink;

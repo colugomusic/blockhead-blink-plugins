@@ -3,6 +3,7 @@
 #include "model.h"
 #include <blink/search.hpp>
 
+namespace rattler {
 namespace dsp {
 
 struct AudioData {
@@ -103,4 +104,5 @@ auto init(Model* model, UnitDSP* unit_dsp) -> void {
 	reset(model, unit_dsp);
 }
 
-} // dsp
+} // namespace dsp
+} // namespace rattler

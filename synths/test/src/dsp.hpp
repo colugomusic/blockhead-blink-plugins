@@ -4,6 +4,7 @@
 #include <blink/search.hpp>
 #include "model.h"
 
+namespace test_synth {
 namespace dsp {
 
 struct AudioData {
@@ -100,4 +101,5 @@ auto reset(Model* model, UnitDSP* unit_dsp) -> void {
 	unit_dsp->fade_in.setGlideTimeInSamples(static_cast<float>(unit_dsp->SR.value) * 0.001f);
 }
 
-} // dsp
+} // namespace dsp
+} // namespace test_synth

@@ -4,6 +4,8 @@
 #include <blink/transform/tape.hpp>
 #include "shared/noise_generator.h"
 
+namespace classic_sampler {
+
 struct Params {
 	struct {
 		blink_ParamIdx amp;
@@ -63,3 +65,6 @@ struct Model {
 	DrawState draw;
 	Params params;
 };
+
+} // namespace classic_sampler
+

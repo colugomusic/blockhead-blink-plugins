@@ -4,6 +4,8 @@
 #include "model.h"
 #include <blink_std.h>
 
+using namespace freeze_fx;
+
 static Model model;
 
 auto blink_get_error_string(blink_Error error) -> blink_TempString {

@@ -3,6 +3,7 @@
 #include "model.h"
 #include <blink/search.hpp>
 
+namespace lofi {
 namespace dsp {
 
 struct AudioData {
@@ -63,4 +64,5 @@ auto reset(Model* model, UnitDSP* unit_dsp) -> void {
 	unit_dsp->value[1] = 0.0f;
 }
 
-} // dsp
+} // namespace dsp
+} // namespace lofi

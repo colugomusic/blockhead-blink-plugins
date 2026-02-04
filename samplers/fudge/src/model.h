@@ -15,6 +15,8 @@ BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPGens.h>
 BLINK_QUIET_INCLUDE_END
 
+namespace fudge_sampler {
+
 struct Params {
 	struct {
 		blink_ParamIdx harmonics_scale;
@@ -87,3 +89,6 @@ struct Model {
 	Params params;
 	std::map<blink_ID, std::shared_ptr<SampleAnalysis>> sample_analysis;
 };
+
+} // namespace fudge_sampler
+

@@ -7,6 +7,8 @@ BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPGens.h>
 BLINK_QUIET_INCLUDE_END
 
+namespace resonator {
+
 struct Params {
 	struct {
 		struct {
@@ -57,3 +59,5 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace resonator

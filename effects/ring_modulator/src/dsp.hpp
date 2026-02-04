@@ -3,6 +3,7 @@
 #include "model.h"
 #include <blink/search.hpp>
 
+namespace ring_modulator {
 namespace dsp {
 
 struct AudioData {
@@ -37,4 +38,5 @@ auto reset(Model* model, UnitDSP* unit_dsp) -> void {
 	unit_dsp->sine.clear();
 }
 
-} // dsp
+} // namespace dsp
+} // namespace ring_modulator

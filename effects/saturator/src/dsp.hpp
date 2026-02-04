@@ -3,6 +3,7 @@
 #include "model.h"
 #include <blink/search.hpp>
 
+namespace saturator_fx {
 namespace dsp {
 
 struct AudioData {
@@ -34,4 +35,5 @@ auto process(Model* model, UnitDSP* unit_dsp, const blink_VaryingData& varying, 
 	return BLINK_OK;
 }
 
-} // dsp
+} // namespace dsp
+} // namespace saturator_fx

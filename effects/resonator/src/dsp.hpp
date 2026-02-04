@@ -4,6 +4,7 @@
 #include <blink/dsp.hpp>
 #include <blink/search.hpp>
 
+namespace resonator {
 namespace dsp {
 
 static inline const std::array<float, 4> PAN_VECTORS = {-0.5f, 0.5f, -1.0f, 1.0f};
@@ -193,4 +194,5 @@ auto reset(Model* model, UnitDSP* unit_dsp) -> void {
 	}
 }
 
-} // dsp
+} // namespace dsp
+} // namespace resonator

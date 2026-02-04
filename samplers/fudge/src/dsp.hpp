@@ -8,6 +8,7 @@
 #include "convert.h"
 #include "model.h"
 
+namespace fudge_sampler {
 namespace dsp {
 
 [[nodiscard]] static
@@ -202,4 +203,5 @@ auto process(Model* model, UnitDSP* unit_dsp, const blink_SamplerVaryingData& va
 	return BLINK_OK;
 }
 
-} // dsp
+} // namespace dsp
+} // namespace fudge_sampler

@@ -7,6 +7,8 @@
 #include <blink_std.h>
 #include <regex>
 
+using namespace resonator;
+
 static Model model;
 
 namespace tweak {

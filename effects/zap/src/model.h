@@ -6,6 +6,8 @@ BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPGens.h>
 BLINK_QUIET_INCLUDE_END
 
+namespace zap_fx {
+
 struct Params {
 	struct {
 		blink_ParamIdx frequency;
@@ -30,3 +32,6 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace zap_fx
+

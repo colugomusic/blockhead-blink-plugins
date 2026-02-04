@@ -3,6 +3,7 @@
 #include "model.h"
 #include <blink/search.hpp>
 
+namespace effect_template {
 namespace dsp {
 
 struct AudioData {
@@ -32,4 +33,5 @@ auto reset(Model* model, UnitDSP* unit_dsp) -> void {
 	// TODO:
 }
 
-} // dsp
+} // namespace dsp
+} // namespace effect_template

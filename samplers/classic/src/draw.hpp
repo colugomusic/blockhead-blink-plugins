@@ -5,6 +5,8 @@
 #include <blink/sample_data.hpp>
 #include <blink/search.hpp>
 
+namespace classic_sampler {
+
 struct DrawData {
 	struct {
 		blink::uniform::Env amp;
@@ -109,3 +111,6 @@ auto draw(Model* model, const blink_SamplerVaryingData& varying, const blink_Sam
 	}
 	return BLINK_OK;
 }
+
+} // namespace classic_sampler
+

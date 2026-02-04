@@ -5,6 +5,8 @@ BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPGens.h>
 BLINK_QUIET_INCLUDE_END
 
+namespace ring_modulator {
+
 struct Params {
 	struct {
 		blink_ParamIdx pitch;
@@ -26,3 +28,5 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace ring_modulator

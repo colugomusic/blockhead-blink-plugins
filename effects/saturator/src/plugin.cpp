@@ -4,6 +4,8 @@
 #include "model.h"
 #include <blink_std.h>
 
+using namespace saturator_fx;
+
 static Model model;
 
 [[nodiscard]]

@@ -3,6 +3,8 @@
 #include "dsp.hpp"
 #include "model.h"
 
+using namespace effect_template;
+
 static Model model;
 
 auto blink_get_error_string(blink_Error error) -> blink_TempString {

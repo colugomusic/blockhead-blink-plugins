@@ -9,6 +9,8 @@
 #include "dsp.hpp"
 #include "model.h"
 
+using namespace compressor;
+
 static Model model;
 
 namespace tweak {

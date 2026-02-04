@@ -7,6 +7,8 @@ BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPBuffer.h>
 BLINK_QUIET_INCLUDE_END
 
+namespace tract_fx {
+
 struct Params {
 	struct {
 		struct {
@@ -43,3 +45,5 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace tract_fx

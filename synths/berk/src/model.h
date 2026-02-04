@@ -9,6 +9,8 @@ BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPGens.h>
 BLINK_QUIET_INCLUDE_END
 
+namespace berk_synth {
+
 struct Params {
 	struct {
 		blink_ParamIdx amp;
@@ -52,3 +54,6 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace berk_synth
+

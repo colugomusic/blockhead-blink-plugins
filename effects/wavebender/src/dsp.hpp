@@ -3,6 +3,7 @@
 #include "model.h"
 #include <blink/search.hpp>
 
+namespace wavebender_fx {
 namespace dsp {
 
 struct AudioData {
@@ -89,4 +90,6 @@ auto init(Model* model, UnitDSP* unit_dsp) -> void {
 	reset(model, unit_dsp);
 }
 
-} // dsp
+} // namespace dsp
+} // namespace wavebender_fx
+

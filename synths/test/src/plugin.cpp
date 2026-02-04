@@ -4,6 +4,8 @@
 #include "dsp.hpp"
 #include "model.h"
 
+using namespace test_synth;
+
 static Model model;
 
 using namespace blink;

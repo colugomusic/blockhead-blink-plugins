@@ -3,6 +3,8 @@
 #include "buffer.h"
 #include <blink/plugin_impl.hpp>
 
+namespace freeze_fx {
+
 struct Grain {
 	bool on = false;
 	bool dry = false;
@@ -54,3 +56,5 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace freeze_fx

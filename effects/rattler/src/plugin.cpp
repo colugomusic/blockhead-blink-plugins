@@ -4,6 +4,8 @@
 #include "model.h"
 #include <blink_std.h>
 
+using namespace rattler;
+
 static Model model;
 
 static constexpr auto UUID_WIDTH = "aec5e808-dcbb-424c-95a6-ba4749edccc4";

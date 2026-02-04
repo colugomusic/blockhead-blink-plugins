@@ -8,6 +8,8 @@
 #include "model.h"
 #include "shared/harmonics.hpp"
 
+using namespace fudge_sampler;
+
 static Model model;
 
 namespace tweak {

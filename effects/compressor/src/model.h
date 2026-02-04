@@ -3,6 +3,8 @@
 #include <blink/plugin_impl.hpp>
 #include <snd/audio/env_follower.hpp>
 
+namespace compressor {
+
 struct Params {
 	struct {
 		blink_ParamIdx attack;
@@ -38,3 +40,5 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace compressor

@@ -5,6 +5,7 @@
 #include <blink/search.hpp>
 #include <DSP/MLDSPFunctional.h>
 
+namespace compressor {
 namespace dsp {
 
 struct AudioData {
@@ -107,4 +108,5 @@ auto reset(Model* model, UnitDSP* unit_dsp) -> void {
 	unit_dsp->stereo.env_follower_1.reset();
 }
 
-} // dsp
+} // namespace dsp
+} // namespace compressor

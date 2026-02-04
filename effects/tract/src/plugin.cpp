@@ -5,6 +5,8 @@
 #include "shared/tract_params.hpp"
 #include <blink_std.h>
 
+using namespace tract_fx;
+
 static Model model;
 
 auto blink_get_error_string(blink_Error error) -> blink_TempString {

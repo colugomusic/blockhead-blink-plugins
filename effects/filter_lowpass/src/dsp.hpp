@@ -3,6 +3,7 @@
 #include "model.h"
 #include <blink/search.hpp>
 
+namespace filter_lowpass {
 namespace dsp {
 
 struct AudioData {
@@ -48,4 +49,5 @@ auto reset(Model* model, UnitDSP* unit_dsp) -> void {
 	unit_dsp->filter[1] = {};
 }
 
-} // dsp
+} // namespace dsp
+} // namespace filter_lowpass

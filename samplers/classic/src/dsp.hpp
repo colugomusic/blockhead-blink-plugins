@@ -7,6 +7,7 @@
 #include <snd/frame-pos.hpp>
 #include "model.h"
 
+namespace classic_sampler {
 namespace dsp {
 
 struct AudioData {
@@ -202,4 +203,6 @@ auto reset(Model* model, UnitDSP* unit_dsp) -> void {
 	unit_dsp->reverse_correction.grain = {};
 }
 
-} // dsp
+} // namespace dsp
+} // namespace classic_sampler
+

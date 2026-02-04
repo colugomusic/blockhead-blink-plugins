@@ -3,6 +3,7 @@
 #include "model.h"
 #include <blink/search.hpp>
 
+namespace freeze_fx {
 namespace dsp {
 
 struct LR { float L = 0.0f, R = 0.0f; };
@@ -206,4 +207,5 @@ auto unit_reset(Model* model, InstanceDSP* instance_dsp, UnitDSP* unit_dsp) -> v
 	unit_dsp->particle.queue_reset = true;
 }
 
-} // dsp
+} // namespace dsp
+} // namespace freeze_fx

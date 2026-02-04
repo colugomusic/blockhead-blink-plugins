@@ -4,6 +4,7 @@
 #include <blink/dsp.hpp>
 #include <blink/search.hpp>
 
+namespace gainer {
 namespace dsp {
 
 struct AudioData {
@@ -38,4 +39,5 @@ auto process(Model* model, UnitDSP* unit_dsp, const blink_VaryingData& varying, 
 	return BLINK_OK;
 }
 
-} // dsp
+} // namespace dsp
+} // namespace gainer

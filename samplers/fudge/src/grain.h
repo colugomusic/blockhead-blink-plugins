@@ -1,5 +1,7 @@
 #pragma once
 
+namespace fudge_sampler {
+
 struct Grain
 {
 	bool on = false;
@@ -18,3 +20,5 @@ struct Grain
 		pos[1] = 0.0f;
 	}
 };
+
+} // namespace fudge_sampler

@@ -3,6 +3,7 @@
 #include "model.h"
 #include <blink/search.hpp>
 
+namespace tract_fx {
 namespace dsp {
   
 static constexpr auto BASE_MODEL_SR = 44100;
@@ -113,4 +114,5 @@ auto reset(Model* model, UnitDSP* unit_dsp) -> void {
 	snd::audio::filter::tract::reset(&unit_dsp->tract[1]);
 }
 
-} // dsp
+} // namespace dsp
+} // namespace tract_fx

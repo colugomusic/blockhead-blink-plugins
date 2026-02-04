@@ -2,6 +2,8 @@
 
 #include <blink/plugin_impl.hpp>
 
+namespace lofi {
+
 struct Params {
 	struct {
 		blink_ParamIdx sr;
@@ -25,3 +27,5 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace lofi

@@ -7,6 +7,7 @@ BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPOps.h>
 BLINK_QUIET_INCLUDE_END
 
+namespace fudge_sampler {
 namespace convert {
 
 constexpr auto GRAIN_SIZE_MIN_MS = 1.0f;
@@ -40,4 +41,6 @@ auto ms_to_samples(const ml::DSPVector& ms, int SR) -> ml::DSPVector {
 	return (ms / GRAIN_SIZE_MAX_MS) * float(SR);
 }
 
-} // convert
+} // namespace convert
+} // namespace fudge_sampler
+

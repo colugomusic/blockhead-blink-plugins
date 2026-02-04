@@ -5,6 +5,8 @@ BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPGens.h>
 BLINK_QUIET_INCLUDE_END
 
+namespace rattler {
+
 struct Params {
 	struct {
 		blink_ParamIdx time;
@@ -36,3 +38,5 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace rattler

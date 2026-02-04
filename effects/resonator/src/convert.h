@@ -7,6 +7,7 @@ BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPOps.h>
 BLINK_QUIET_INCLUDE_END
 
+namespace resonator {
 namespace convert {
 
 [[nodiscard]] inline
@@ -24,4 +25,5 @@ auto ratio_to_linear(float x) {
 	return blink::const_math::log(x) / blink::const_math::log(4.0f);
 };
 
-} // convert
+} // namespace convert
+} // namespace resonator

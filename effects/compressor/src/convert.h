@@ -4,6 +4,8 @@
 #include <snd/ease.hpp>
 #include <snd/misc.hpp>
 
+namespace compressor {
+
 static constexpr auto ATTACK_MIN      = 0.001f;
 static constexpr auto ATTACK_MAX      = 10.f;
 static constexpr auto ATTACK_DEFAULT  = 0.1f;
@@ -41,4 +43,5 @@ auto release_to_linear(T x) -> T {
 	return x;
 }
 
-} // convert
+} // namespace convert
+} // namespace compressor

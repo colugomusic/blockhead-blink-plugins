@@ -2,6 +2,8 @@
 
 #include <blink/plugin_impl.hpp>
 
+namespace effect_template {
+
 struct Params {
 	struct {
 	} env;
@@ -24,3 +26,5 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace effect_template

@@ -3,6 +3,7 @@
 #include "model.h"
 #include <blink/search.hpp>
 
+namespace zap_fx {
 namespace dsp {
 
 static constexpr auto FREQ_GLIDE_TIME_MS = 25.0f;
@@ -71,4 +72,6 @@ auto init(Model* model, UnitDSP* unit_dsp) -> void {
 	}
 }
 
-} // dsp
+} // namespace dsp
+} // namespace zap_fx
+

@@ -3,6 +3,7 @@
 #include "model.h"
 #include <blink/search.hpp>
 
+namespace spring_reverb {
 namespace dsp {
 
 static constexpr auto DECAY_LO = 0.01f;
@@ -123,4 +124,5 @@ auto reset(Model* model, UnitDSP* unit_dsp) -> void {
 	unit_dsp->feedbackR = ml::DSPVector();
 }
 
-} // dsp
+} // namespace dsp
+} // namespace spring_reverb

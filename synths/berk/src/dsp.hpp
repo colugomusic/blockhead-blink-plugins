@@ -5,6 +5,7 @@
 #include <snd/flags.hpp>
 #include "model.h"
 
+namespace berk_synth {
 namespace dsp {
 
 static const ml::DSPVector MIN_THROAT_POSITION(4.0f);
@@ -152,4 +153,5 @@ auto reset(Model* model, UnitDSP* unit_dsp) -> void {
 	snd::audio::glottis::reset(&unit_dsp->glottis);
 }
 
-} // dsp
+} // namespace dsp
+} // namespace berk_synth

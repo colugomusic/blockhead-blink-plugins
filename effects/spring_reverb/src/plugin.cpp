@@ -4,6 +4,8 @@
 #include "model.h"
 #include <blink_std.h>
 
+using namespace spring_reverb;
+
 static Model model;
 
 [[nodiscard]]

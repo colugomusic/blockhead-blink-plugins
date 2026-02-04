@@ -6,6 +6,8 @@
 #include <blink/sample_data.hpp>
 #include <blink/search.hpp>
 
+namespace fudge_sampler {
+
 struct DrawData {
 	struct {
 		blink::uniform::Env amp;
@@ -112,3 +114,6 @@ auto draw(Model* model, const blink_SamplerVaryingData& varying, const blink_Sam
 	}
 	return BLINK_OK;
 }
+
+} // namespace fudge_sampler
+

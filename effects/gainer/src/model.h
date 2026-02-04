@@ -2,6 +2,8 @@
 
 #include <blink/plugin_impl.hpp>
 
+namespace gainer {
+
 struct Params {
 	struct {
 		blink_ParamIdx amp;
@@ -26,3 +28,5 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace gainer

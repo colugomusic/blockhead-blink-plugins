@@ -4,6 +4,8 @@
 #include <blink/plugin_impl.hpp>
 #include "shared/noise_generator.h"
 
+namespace test_synth {
+
 struct Params {
 	struct {
 		blink_ParamIdx amp;
@@ -49,3 +51,6 @@ struct Model {
 	blink::Entities<Instance, Unit> entities;
 	Params params;
 };
+
+} // namespace test_synth
+
