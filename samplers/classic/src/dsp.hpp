@@ -123,7 +123,7 @@ auto apply_correction_grains(
 			reverse_correction->grain.pos += reverse_correction->grain.ff;
 			reverse_correction->grain.vpos += reverse_correction->grain.vff;
 			grain_positions.set(i, reverse_correction->grain.pos);
-			xfade[i] = snd::ease::quadratic::in_out(snd::inverse_lerp(reverse_correction->grain.beg, reverse_correction->grain.vend, reverse_correction->grain.vpos));
+			xfade[i] = snd::easing::quadratic::in_out(snd::inverse_lerp(reverse_correction->grain.beg, reverse_correction->grain.vend, reverse_correction->grain.vpos));
 			if (reverse_correction->grain.vpos >= reverse_correction->grain.vend) reverse_correction->grain.on = false;
 		}
 		else {
@@ -141,7 +141,7 @@ auto apply_correction_grains(
 				reverse_correction->grain.vend = float(double(beg)) + grain_info.length[i];
 				reverse_correction->grain.vff = std::abs(grain_info.ff[i]);
 				grain_positions.set(i, reverse_correction->grain.pos);
-				xfade[i] = snd::ease::quadratic::in_out(snd::inverse_lerp(reverse_correction->grain.beg, reverse_correction->grain.vend, reverse_correction->grain.vpos));
+				xfade[i] = snd::easing::quadratic::in_out(snd::inverse_lerp(reverse_correction->grain.beg, reverse_correction->grain.vend, reverse_correction->grain.vpos));
 				grains_remaining--;
 			}
 		}
