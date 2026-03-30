@@ -18,16 +18,16 @@ namespace attack {
 
 [[nodiscard]] inline
 auto stepify(float x) -> float {
-	x = convert::linear_to_attack(x);
-	x = blink::tweak::stepify<1000>(x);
-	x = convert::attack_to_linear(x);
+	x = compressor::convert::linear_to_attack(x);
+	x = ::tweak::math::stepify<1000>(x);
+	x = compressor::convert::attack_to_linear(x);
 	return x;
 }
 
 inline
 auto to_string(float x, char buffer[BLINK_STRING_MAX]) -> void {
 	std::stringstream ss;
-	ss << blink::tweak::stepify<1000>(convert::linear_to_attack(x)) << " ms";
+	ss << ::tweak::math::stepify<1000>(compressor::convert::linear_to_attack(x)) << " ms";
 	blink::tweak::write_string(ss.str(), buffer);
 }
 
@@ -35,30 +35,30 @@ auto to_string(float x, char buffer[BLINK_STRING_MAX]) -> void {
 auto tweaker() -> blink_TweakerReal {
 	blink_TweakerReal out = {0};
 	out.constrain = [](float x) -> float {
-		return std::clamp(x, convert::attack_to_linear(ATTACK_MIN), convert::attack_to_linear(ATTACK_MAX));
+		return std::clamp(x, compressor::convert::attack_to_linear(ATTACK_MIN), compressor::convert::attack_to_linear(ATTACK_MAX));
 	};
 	out.decrement = [](float x, bool precise) -> float {
-		x = convert::linear_to_attack(x);
+		x = compressor::convert::linear_to_attack(x);
 		x -= precise ? 0.001f : 0.01f;
-		return convert::attack_to_linear(x);
+		return compressor::convert::attack_to_linear(x);
 	};
 	out.drag = [](float x, int amount, bool precise) -> float {
-		x = convert::linear_to_attack(x);
+		x = compressor::convert::linear_to_attack(x);
 		x += amount * (precise ? 0.001f : 0.01f);
-		return convert::attack_to_linear(x);
+		return compressor::convert::attack_to_linear(x);
 	};
 	out.from_string = [](const char* str, float* out) -> blink_Bool {
-		const auto value = blink::tweak::find_positive_number<float>(str);
+		const auto value = ::tweak::find_positive_number<float>(str);
 		if (value) {
-			*out = convert::attack_to_linear(*value);
+			*out = compressor::convert::attack_to_linear(*value);
 			return {true};
 		}
 		return {false};
 	};
 	out.increment = [](float x, bool precise) -> float {
-		x = convert::linear_to_attack(x);
+		x = compressor::convert::linear_to_attack(x);
 		x += precise ? 0.001f : 0.01f;
-		return convert::attack_to_linear(x);
+		return compressor::convert::attack_to_linear(x);
 	};
 	out.stepify   = stepify;
 	out.to_string = to_string;
@@ -71,16 +71,16 @@ namespace release {
 
 [[nodiscard]] inline
 auto stepify(float x) -> float {
-	x = convert::linear_to_release(x);
-	x = blink::tweak::stepify<1000>(x);
-	x = convert::release_to_linear(x);
+	x = compressor::convert::linear_to_release(x);
+	x = ::tweak::math::stepify<1000>(x);
+	x = compressor::convert::release_to_linear(x);
 	return x;
 }
 
 inline
 auto to_string(float x, char buffer[BLINK_STRING_MAX]) -> void {
 	std::stringstream ss;
-	ss << blink::tweak::stepify<1000>(convert::linear_to_release(x)) << " ms";
+	ss << ::tweak::math::stepify<1000>(compressor::convert::linear_to_release(x)) << " ms";
 	blink::tweak::write_string(ss.str(), buffer);
 }
 
@@ -88,30 +88,30 @@ auto to_string(float x, char buffer[BLINK_STRING_MAX]) -> void {
 auto tweaker() -> blink_TweakerReal {
 	blink_TweakerReal out = {0};
 	out.constrain = [](float x) -> float {
-		return std::clamp(x, convert::release_to_linear(ATTACK_MIN), convert::release_to_linear(ATTACK_MAX));
+		return std::clamp(x, compressor::convert::release_to_linear(ATTACK_MIN), compressor::convert::release_to_linear(ATTACK_MAX));
 	};
 	out.decrement = [](float x, bool precise) -> float {
-		x = convert::linear_to_release(x);
+		x = compressor::convert::linear_to_release(x);
 		x -= precise ? 0.001f : 0.01f;
-		return convert::release_to_linear(x);
+		return compressor::convert::release_to_linear(x);
 	};
 	out.drag = [](float x, int amount, bool precise) -> float {
-		x = convert::linear_to_release(x);
+		x = compressor::convert::linear_to_release(x);
 		x += amount * (precise ? 0.001f : 0.01f);
-		return convert::release_to_linear(x);
+		return compressor::convert::release_to_linear(x);
 	};
 	out.from_string = [](const char* str, float* out) -> blink_Bool {
-		const auto value = blink::tweak::find_positive_number<float>(str);
+		const auto value = ::tweak::find_positive_number<float>(str);
 		if (value) {
-			*out = convert::release_to_linear(*value);
+			*out = compressor::convert::release_to_linear(*value);
 			return {true};
 		}
 		return {false};
 	};
 	out.increment = [](float x, bool precise) -> float {
-		x = convert::linear_to_release(x);
+		x = compressor::convert::linear_to_release(x);
 		x += precise ? 0.001f : 0.01f;
-		return convert::release_to_linear(x);
+		return compressor::convert::release_to_linear(x);
 	};
 	out.stepify   = stepify;
 	out.to_string = to_string;
@@ -129,22 +129,22 @@ auto constrain(float x) -> float {
 
 [[nodiscard]] inline
 auto decrement(float x, bool precise) -> float {
-	return blink::math::convert::ratio_to_linear(blink::tweak::decrement<1, 10>(blink::math::convert::linear_to_ratio(x), precise));
+	return blink::math::convert::ratio_to_linear(::tweak::decrement<1, 10>(blink::math::convert::linear_to_ratio(x), precise));
 }
 
 [[nodiscard]] inline
 auto drag(float x, int amount, bool precise) -> float {
-	return blink::math::convert::ratio_to_linear(blink::tweak::drag<float, 10, 100>(blink::math::convert::linear_to_ratio(x), amount / 5, precise));
+	return blink::math::convert::ratio_to_linear(::tweak::drag<float, 10, 100>(blink::math::convert::linear_to_ratio(x), amount / 5, precise));
 }
 
 [[nodiscard]] inline
 auto increment(float x, bool precise) -> float {
-	return blink::math::convert::ratio_to_linear(blink::tweak::increment<1, 10>(blink::math::convert::linear_to_ratio(x), precise));
+	return blink::math::convert::ratio_to_linear(::tweak::increment<1, 10>(blink::math::convert::linear_to_ratio(x), precise));
 }
 
 [[nodiscard]] inline
 auto stepify(float x) -> float {
-	return blink::math::convert::ratio_to_linear(blink::tweak::stepify<1000>(blink::math::convert::linear_to_ratio(x)));
+	return blink::math::convert::ratio_to_linear(::tweak::math::stepify<1000>(blink::math::convert::linear_to_ratio(x)));
 }
 
 inline

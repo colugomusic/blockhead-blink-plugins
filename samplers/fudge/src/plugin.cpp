@@ -17,7 +17,7 @@ namespace grain_size {
 
 [[nodiscard]] static
 auto snap_value(float v, float step_size, float snap_amount) -> float {
-	return blink::tweak::snap_value(v, step_size, snap_amount);
+	return ::tweak::snap_value(v, step_size, snap_amount);
 }
 
 [[nodiscard]] static
@@ -27,33 +27,33 @@ auto constrain(float v) -> float {
 
 [[nodiscard]] static
 auto increment(float v, bool precise) {
-	return blink::tweak::increment<100, 1000>(v, precise);
+	return ::tweak::increment<100, 1000>(v, precise);
 }
 
 [[nodiscard]] static
 auto decrement(float v, bool precise) {
-	return blink::tweak::decrement<100, 1000>(v, precise);
+	return ::tweak::decrement<100, 1000>(v, precise);
 }
 
 [[nodiscard]] static
 auto drag(float v, int amount, bool precise) -> float {
-	return blink::tweak::drag<float, 100, 1000>(v, amount / 5, precise);
+	return ::tweak::drag<float, 100, 1000>(v, amount / 5, precise);
 }
 
 static
 auto to_string(float v, char buffer[BLINK_STRING_MAX]) -> void {
 	std::stringstream ss;
-	ss << convert::linear_to_ms(v) << " ms";
+	ss << fudge_sampler::convert::linear_to_ms(v) << " ms";
 	blink::tweak::write_string(ss.str(), buffer);
 }
 
 [[nodiscard]] static
 auto from_string(const char* str, float* out) -> blink_Bool {
-	auto value = blink::tweak::find_number<float>(std::move(str));
+	auto value = ::tweak::find_number<float>(std::move(str));
 	if (!value) {
 		return {false};
 	}
-	*out = convert::ms_to_linear(*value);
+	*out = fudge_sampler::convert::ms_to_linear(*value);
 	return {true};
 }
 

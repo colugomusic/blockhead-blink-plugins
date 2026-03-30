@@ -2,23 +2,24 @@
 
 #include <blink/tweak.hpp>
 #include <blink_std.h>
+#include <plugin_impl.hpp>
 
 namespace tweak {
 namespace harmonics_amount {
 
 [[nodiscard]] inline
 auto constrain(const float value) -> float {
-	return blink::tweak::constrain(value, 0.0f, 3.0f);
+	return ::tweak::constrain(value, 0.0f, 3.0f);
 }
 
 [[nodiscard]] inline
 auto constrain_offset(const float value) -> float {
-	return blink::tweak::constrain(value, -3.0f, 3.0f);
+	return ::tweak::constrain(value, -3.0f, 3.0f);
 }
 
 [[nodiscard]] inline
 auto drag(float value, int amount, bool precise) -> float {
-	return blink::tweak::drag<float, 10, 100>(value, amount / 5, precise);
+	return ::tweak::drag<float, 10, 100>(value, amount / 5, precise);
 }
 
 [[nodiscard]] inline
@@ -28,7 +29,7 @@ auto fns() -> blink_EnvFns {
 		*out = float(index);
 		return {true};
 	};
-	fns.stepify = &blink::tweak::stepify<100>;
+	fns.stepify = &::tweak::math::stepify<100>;
 	fns.to_string = blink::tweak::to_string;
 	return fns;
 }
@@ -37,9 +38,9 @@ auto fns() -> blink_EnvFns {
 auto tweaker() -> blink_TweakerReal {
 	blink_TweakerReal out = {0};
 	out.constrain   = &constrain;
-	out.stepify     = &blink::tweak::stepify<100>;
-	out.increment   = &blink::tweak::increment<1, 10>;
-	out.decrement   = &blink::tweak::decrement<1, 10>;
+	out.stepify     = &::tweak::math::stepify<100>;
+	out.increment   = &::tweak::increment<1, 10>;
+	out.decrement   = &::tweak::decrement<1, 10>;
 	out.drag        = &drag;
 	out.from_string = blink::tweak::positive_number_from_string;
 	out.to_string   = blink::tweak::to_string;
@@ -59,12 +60,12 @@ namespace harmonics_spread {
 
 [[nodiscard]] inline
 auto constrain(const float value) -> float {
-	return blink::tweak::constrain(value, 0.0f, 4.0f);
+	return ::tweak::constrain(value, 0.0f, 4.0f);
 }
 
 [[nodiscard]] inline
 auto drag(float value, int amount, bool precise) -> float {
-	return blink::tweak::drag<float, 100, 1000>(value, amount / 5, precise);
+	return ::tweak::drag<float, 100, 1000>(value, amount / 5, precise);
 }
 
 [[nodiscard]] inline
@@ -74,7 +75,7 @@ auto fns() -> blink_EnvFns {
 		*out = float(index) / 4.0f;
 		return {true};
 	};
-	fns.stepify = blink::tweak::stepify<100>;
+	fns.stepify = ::tweak::math::stepify<100>;
 	fns.to_string = blink::tweak::percentage::to_string;
 	return fns;
 }
@@ -83,8 +84,8 @@ auto fns() -> blink_EnvFns {
 auto tweaker() -> blink_TweakerReal {
 	blink_TweakerReal out = {0};
 	out.constrain   = &constrain;
-	out.increment   = blink::tweak::increment<100, 1000>;
-	out.decrement   = blink::tweak::decrement<100, 1000>;
+	out.increment   = ::tweak::increment<100, 1000>;
+	out.decrement   = ::tweak::decrement<100, 1000>;
 	out.drag        = &drag;
 	out.from_string = blink::tweak::positive_number_from_string;
 	out.stepify     = blink::tweak::percentage::stepify;

@@ -21,22 +21,22 @@ auto constrain(float value) -> float {
 
 [[nodiscard]]
 auto decrement(float value, bool precise) -> float {
-	return blink::tweak::decrement<10, 100>(value, precise);
+	return ::tweak::decrement<10, 100>(value, precise);
 }
 
 [[nodiscard]]
 auto increment(float value, bool precise) -> float {
-	return blink::tweak::increment<10, 100>(value, precise);
+	return ::tweak::increment<10, 100>(value, precise);
 }
 
 [[nodiscard]]
 auto drag(float value, int amount, bool precise) -> float {
-	return blink::tweak::drag<float, 10, 100>(value, amount / 5, precise);
+	return ::tweak::drag<float, 10, 100>(value, amount / 5, precise);
 }
 
 [[nodiscard]]
 auto stepify(float value) -> float {
-	return convert::ratio_to_linear(blink::tweak::stepify<1000, float>(convert::linear_to_ratio(value)));
+	return convert::ratio_to_linear(::tweak::math::stepify<1000, float>(convert::linear_to_ratio(value)));
 }
 
 [[nodiscard]]
@@ -90,7 +90,7 @@ auto from_string(const char* c_str, float* out) -> blink_Bool {
 		*out = 1.0f / std::stoi(match[1]);
 		return {true};
 	}
-	const auto value = blink::tweak::find_number<float>(std::move(str));
+	const auto value = ::tweak::find_number<float>(std::move(str));
 	if (!value) {
 		return {false};
 	}

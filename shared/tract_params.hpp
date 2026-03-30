@@ -1,6 +1,8 @@
 #pragma once
 
 #include <blink/plugin_impl.hpp>
+#include <tweak/math.hpp>
+#include <tweak/tweak.hpp>
 #include <sstream>
 
 namespace tract {
@@ -24,15 +26,15 @@ auto constrain(float v) -> float {
 }
 
 auto increment(float v, bool precise) -> float {
-	return convert::quality_to_linear(blink::tweak::increment<1, 10>(convert::linear_to_quality(v), precise));
+	return convert::quality_to_linear(::tweak::increment<1, 10>(convert::linear_to_quality(v), precise));
 }
 
 auto decrement(float v, bool precise) -> float {
-	return convert::quality_to_linear(blink::tweak::decrement<1, 10>(convert::linear_to_quality(v), precise));
+	return convert::quality_to_linear(::tweak::decrement<1, 10>(convert::linear_to_quality(v), precise));
 }
 
 auto drag(float v, int amount, bool precise) -> float {
-	return convert::quality_to_linear(blink::tweak::drag<float, 1, 10>(convert::linear_to_quality(v), amount / 5, precise));
+	return convert::quality_to_linear(::tweak::drag<float, 1, 10>(convert::linear_to_quality(v), amount / 5, precise));
 }
 
 auto to_string(float v, char buffer[BLINK_STRING_MAX]) -> void {
@@ -42,7 +44,7 @@ auto to_string(float v, char buffer[BLINK_STRING_MAX]) -> void {
 }
 
 auto from_string(char const* str, float* out) -> blink_Bool {
-	auto value = blink::tweak::find_number<float>(std::move(str));
+	auto value = ::tweak::find_number<float>(str);
 	if (!value) {
 		return {false};
 	}
@@ -51,7 +53,7 @@ auto from_string(char const* str, float* out) -> blink_Bool {
 }
 
 auto stepify(float v) -> float {
-	return convert::quality_to_linear(blink::tweak::stepify<1>(convert::linear_to_quality(v)));
+	return convert::quality_to_linear(::tweak::math::stepify<1>(convert::linear_to_quality(v)));
 }
 
 auto fns() -> blink_EnvFns {
