@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <blink/const_math.hpp>
 #include <blink/quiet-include.hpp>
+#include <tweak/const-math.hpp>
 BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPOps.h>
 BLINK_QUIET_INCLUDE_END
@@ -22,7 +23,7 @@ auto linear_to_ratio(const ml::DSPVector& x) {
 
 [[nodiscard]] constexpr inline
 auto ratio_to_linear(float x) {
-	return blink::const_math::log(x) / blink::const_math::log(4.0f);
+	return ::tweak::const_math::log(x) / ::tweak::const_math::log(4.0f);
 };
 
 } // namespace convert

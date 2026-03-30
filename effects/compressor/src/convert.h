@@ -32,14 +32,14 @@ auto linear_to_release(T x) -> T {
 template <typename T> [[nodiscard]] inline constexpr
 auto attack_to_linear(T x) -> T {
 	x = snd::inverse_lerp(ATTACK_MIN, ATTACK_MAX, x);
-	x = blink::const_math::sqrt(blink::const_math::sqrt(x));
+	x = ::tweak::const_math::sqrt(::tweak::const_math::sqrt(x));
 	return x;
 }
 
 template <typename T> [[nodiscard]] inline constexpr
 auto release_to_linear(T x) -> T {
 	x = snd::inverse_lerp(RELEASE_MIN, RELEASE_MAX, x);
-	x = blink::const_math::sqrt(blink::const_math::sqrt(x));
+	x = ::tweak::const_math::sqrt(::tweak::const_math::sqrt(x));
 	return x;
 }
 
