@@ -75,9 +75,9 @@ auto to_string(float value, char buffer[BLINK_STRING_MAX]) -> void {
 
 [[nodiscard]]
 auto from_string(const char* c_str, float* out) -> blink_Bool {
-	static constexpr auto HALF = convert::ratio_to_linear(0.5f);
-	static constexpr auto DOUBLE = convert::ratio_to_linear(2.0f);
-	static constexpr auto TRIPLE = convert::ratio_to_linear(3.0f);
+	static const auto HALF = convert::ratio_to_linear(0.5f);
+	static const auto DOUBLE = convert::ratio_to_linear(2.0f);
+	static const auto TRIPLE = convert::ratio_to_linear(3.0f);
 	std::string str(c_str);
 	std::string uppercase = str;
 	std::transform(str.begin(), str.end(), uppercase.begin(), ::toupper);
