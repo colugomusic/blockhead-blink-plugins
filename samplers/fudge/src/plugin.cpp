@@ -165,7 +165,7 @@ auto add_param_env_speed(const blink::Plugin& plugin) -> blink_ParamIdx {
 [[nodiscard]] static
 auto make_sampler_info() -> blink_SamplerInfo {
 	blink_SamplerInfo out = {0};
-	out.baked_waveform_could_be_different = {false};
+	out.baked_waveform_could_be_different = {true};
 	out.requires_sample_analysis          = {true};
 	return out;
 }
