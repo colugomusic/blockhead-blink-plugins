@@ -1,7 +1,7 @@
 #pragma once
 
 #include <snd/audio/oscillators.hpp>
-#include <blink/plugin_impl.hpp>
+#include <blink/plugin-impl.hpp>
 #include "shared/noise_generator.h"
 
 namespace test_synth {

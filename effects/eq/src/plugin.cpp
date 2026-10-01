@@ -1,0 +1,321 @@
+#define BLINK_EXPORT
+
+#ifndef _USE_MATH_DEFINES
+#	define _USE_MATH_DEFINES
+#endif
+
+#include "dsp.hpp"
+#include "model.h"
+#include <blink_std.h>
+#include <cmrc/cmrc.hpp>
+#include <ranges>
+
+using namespace eq;
+
+static Model model;
+
+static constexpr auto PLUGIN_UUID = blink_UUID{"6fccd4a1-8da9-45c3-8174-8b5d7f8cf846"};
+
+static constexpr auto BAND_ON_UUID = std::array<blink_UUID, 8>{
+	blink_UUID{"6ecdb955-1a41-4c44-83a9-5fe2b2c27bb4"},
+	blink_UUID{"e28cb6db-29e4-4cbf-9623-5f1bd8f1c6fb"},
+	blink_UUID{"b85e6352-9f57-46bb-bf2f-aaf829288aaa"},
+	blink_UUID{"f2b5907e-40cc-4045-9e2a-7a58bbea3ece"},
+	blink_UUID{"70357d43-2519-4cf8-a822-eece8af2e9ce"},
+	blink_UUID{"2ccccf85-5546-45dc-a44d-f7626ecd98ef"},
+	blink_UUID{"9587cfda-2fef-4dba-8704-b13ae4b571c4"},
+	blink_UUID{"5dd691f3-243b-4420-8712-a7dd232831e1"},
+};
+
+static constexpr auto BAND_FREQ_UUID = std::array<blink_UUID, 8>{
+	blink_UUID{"77de5482-d145-4034-bb17-b8a93393a444"},
+	blink_UUID{"a6c4025e-2ea0-45e7-8731-041f4cee9036"},
+	blink_UUID{"0b72ef70-74c7-4314-9373-470adfbe15f0"},
+	blink_UUID{"c7750543-95b0-40f6-8f7f-802d771bb367"},
+	blink_UUID{"f4e5e0eb-18a0-4161-90c0-3804f979235a"},
+	blink_UUID{"bdae68c4-e3a4-4ec1-a296-c7e35eb34be1"},
+	blink_UUID{"02d79ea4-f438-47e5-8307-9fcf18d90ebb"},
+	blink_UUID{"a1972b5d-b817-4a9a-820a-aea65c3b7584"},
+};
+
+static constexpr auto BAND_MAGNITUDE_UUID = std::array<blink_UUID, 8>{
+	blink_UUID{"9e926878-e152-46df-8677-ceecb8a490d3"},
+	blink_UUID{"b7b1b6e4-88d7-4541-b291-5597650e35eb"},
+	blink_UUID{"c402588e-d9a6-4104-aaac-f95e4518dfa8"},
+	blink_UUID{"1398abd2-0128-49ab-b8fa-583f0ddda531"},
+	blink_UUID{"365e453c-1cfd-4db2-bfee-372d3d4b8fba"},
+	blink_UUID{"adc935fa-9f25-4dc6-97d2-4095d2da75fc"},
+	blink_UUID{"338c8d86-48f5-4595-b801-cd13b3f79f67"},
+	blink_UUID{"065ce3c5-1e39-4edb-9f4b-7828a4813897"},
+};
+
+static constexpr auto BAND_Q_UUID = std::array<blink_UUID, 8>{
+	blink_UUID{"f27589ef-6b0b-4d05-ae32-691d3d19430a"},
+	blink_UUID{"24b26e1a-cc37-4a02-8b83-e28e103b433a"},
+	blink_UUID{"be20bbd1-3d19-48f5-a732-14499a2aff38"},
+	blink_UUID{"4871e651-69eb-4a39-8871-79a461377943"},
+	blink_UUID{"d17a1a19-ee8d-48da-8ced-02f91137c42e"},
+	blink_UUID{"54e99e42-efd2-447c-abf7-f55b7bc32c6a"},
+	blink_UUID{"a703f46f-3d3e-4f72-a499-ae5f99f3b48d"},
+	blink_UUID{"0aad6c3e-ffcd-4cdc-a85a-b76c820ccfe8"},
+};
+
+static constexpr auto BAND_CURVE_UUID = std::array<blink_UUID, 8>{
+	blink_UUID{"3a603ae9-db0c-4975-96d3-efad14a75162"},
+	blink_UUID{"84135c5b-f7a4-47de-a3e1-847dab52e2a8"},
+	blink_UUID{"72cfb8f0-3cd1-4617-a3bb-2e3d2f2266bf"},
+	blink_UUID{"95129991-801b-4e81-b510-e21548a4399b"},
+	blink_UUID{"89276999-337c-4b33-944b-b55f1f5414a1"},
+	blink_UUID{"ab06f298-db34-47e4-b415-93aa80acd3ab"},
+	blink_UUID{"5befd6de-f833-468d-a2ef-25d01ac98f58"},
+	blink_UUID{"afe67063-4f7b-4570-a42b-cc8b18ec6243"},
+};
+
+enum struct curve_type {
+	shelf_lo,
+	shelf_hi,
+	cut_lo,
+	cut_hi,
+	bell,
+	notch
+};
+
+struct band_spec {
+	std::string_view on_param_name;
+	std::string_view freq_param_name;
+	std::string_view mag_param_name;
+	std::string_view q_param_name;
+	std::string_view curve_param_name;
+	bool enabled = false;
+	float frequency = 1000.0f;
+	float magnitude = 0.0f;
+	curve_type curve = curve_type::bell;
+};
+
+static constexpr auto BAND_SPECS = std::array<band_spec, 8>{
+	band_spec{
+		.on_param_name    = "Band 1 Enabled",
+		.freq_param_name  = "Band 1 Frequency",
+		.mag_param_name   = "Band 1 Magnitude",
+		.q_param_name     = "Band 1 Q",
+		.curve_param_name = "Band 1 Curve Type",
+		.enabled          = true,
+		.frequency        = 100.0f,
+		.magnitude        = 0.0f,
+		.curve            = curve_type::shelf_lo
+	},
+	band_spec{
+		.on_param_name    = "Band 2 Enabled",
+		.freq_param_name  = "Band 2 Frequency",
+		.mag_param_name   = "Band 2 Magnitude",
+		.q_param_name     = "Band 2 Q",
+		.curve_param_name = "Band 2 Curve Type",
+		.enabled          = true,
+		.frequency        = 600.0f,
+		.magnitude        = 0.0f,
+		.curve            = curve_type::bell
+	},
+	band_spec{
+		.on_param_name    = "Band 3 Enabled",
+		.freq_param_name  = "Band 3 Frequency",
+		.mag_param_name   = "Band 3 Magnitude",
+		.q_param_name     = "Band 3 Q",
+		.curve_param_name = "Band 3 Curve Type",
+		.enabled          = true,
+		.frequency        = 4000.0f,
+		.magnitude        = 0.0f,
+		.curve            = curve_type::shelf_hi
+	},
+	band_spec{
+		.on_param_name    = "Band 4 Enabled",
+		.freq_param_name  = "Band 4 Frequency",
+		.mag_param_name   = "Band 4 Magnitude",
+		.q_param_name     = "Band 4 Q",
+		.curve_param_name = "Band 4 Curve Type",
+	},
+	band_spec{
+		.on_param_name    = "Band 5 Enabled",
+		.freq_param_name  = "Band 5 Frequency",
+		.mag_param_name   = "Band 5 Magnitude",
+		.q_param_name     = "Band 5 Q",
+		.curve_param_name = "Band 5 Curve Type",
+	},
+	band_spec{
+		.on_param_name    = "Band 6 Enabled",
+		.freq_param_name  = "Band 6 Frequency",
+		.mag_param_name   = "Band 6 Magnitude",
+		.q_param_name     = "Band 6 Q",
+		.curve_param_name = "Band 6 Curve Type",
+	},
+	band_spec{
+		.on_param_name    = "Band 7 Enabled",
+		.freq_param_name  = "Band 7 Frequency",
+		.mag_param_name   = "Band 7 Magnitude",
+		.q_param_name     = "Band 7 Q",
+		.curve_param_name = "Band 7 Curve Type",
+	},
+	band_spec{
+		.on_param_name    = "Band 8 Enabled",
+		.freq_param_name  = "Band 8 Frequency",
+		.mag_param_name   = "Band 8 Magnitude",
+		.q_param_name     = "Band 8 Q",
+		.curve_param_name = "Band 8 Curve Type",
+	},
+};
+
+namespace { // -----------------------------------------------------------------------------------------------
+
+auto add_band_on_option_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
+	const auto param_idx  = blink::add::param::option(plugin, uuid);
+	const auto flags      = blink_ParamFlags_IsToggle | blink_ParamFlags_MovesDisplay;
+	blink::write::param::name(plugin, param_idx, {spec.on_param_name.data()});
+	blink::write::param::option_default_value(plugin, param_idx, spec.enabled ? 1 : 0);
+	blink::write::param::add_flags(plugin, param_idx, flags);
+	return param_idx;
+}
+
+auto add_band_freq_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
+	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
+	//const auto slider_idx = blink::add::slider::filter_frequency(
+	const auto flags      = blink_ParamFlags_MovesDisplay;
+	// @TODO:
+	return {};
+}
+
+auto add_band_mag_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
+	return {};
+}
+
+auto add_band_q_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
+	return {};
+}
+
+auto add_band_curve_option_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
+	return {};
+}
+
+auto add_band_params(const blink::Plugin& plugin, auto add_fn) -> std::array<blink_ParamIdx, 8> {
+	auto arr = std::array<blink_ParamIdx, 8>{};
+	for (const auto i : std::views::iota(0, 8)) {
+		arr[i] = add_fn(plugin, i);
+	}
+	return arr;
+}
+
+auto add_band_on_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, 8> {
+	auto fn_add = [](const blink::Plugin& plugin, size_t band_index) {
+		return add_band_on_option_param(plugin, BAND_ON_UUID[band_index], BAND_SPECS[band_index]);
+	};
+	return add_band_params(plugin, fn_add);
+}
+
+auto add_band_freq_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, 8> {
+	auto fn_add = [](const blink::Plugin& plugin, size_t band_index) {
+		return add_band_freq_slider_param(plugin, BAND_FREQ_UUID[band_index], BAND_SPECS[band_index]);
+	};
+	return add_band_params(plugin, fn_add);
+}
+
+auto add_band_mag_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, 8> {
+	auto fn_add = [](const blink::Plugin& plugin, size_t band_index) {
+		return add_band_mag_slider_param(plugin, BAND_MAGNITUDE_UUID[band_index], BAND_SPECS[band_index]);
+	};
+	return add_band_params(plugin, fn_add);
+}
+
+auto add_band_q_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, 8> {
+	auto fn_add = [](const blink::Plugin& plugin, size_t band_index) {
+		return add_band_q_slider_param(plugin, BAND_Q_UUID[band_index], BAND_SPECS[band_index]);
+	};
+	return add_band_params(plugin, fn_add);
+}
+
+auto add_band_curve_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, 8> {
+	auto fn_add = [](const blink::Plugin& plugin, size_t band_index) {
+		return add_band_curve_option_param(plugin, BAND_CURVE_UUID[band_index], BAND_SPECS[band_index]);
+	};
+	return add_band_params(plugin, fn_add);
+}
+
+} // ---------------------------------------------------------------------------------------------------------
+
+auto blink_get_error_string(blink_Error error) -> blink_TempString {
+	return {blink::get_std_error_string(static_cast<blink_StdError>(error))};
+}
+
+auto blink_effect_get_info(blink_InstanceIdx) -> blink_EffectInstanceInfo {
+	return {-1, -1, -1, -1};
+}
+
+auto blink_get_plugin_info() -> blink_PluginInfo {
+	blink_PluginInfo out = {0};
+	out.uuid     = PLUGIN_UUID;
+	out.name     = {"EQ"};
+	out.category = {BLINK_STD_CATEGORY_FILTERS};
+	out.version  = {PLUGIN_VERSION};
+	out.has_icon = {true};
+	return out;
+}
+
+auto blink_init(blink_PluginIdx plugin_idx, blink_HostFns host) -> blink_Error {
+	blink::init(&model.plugin, plugin_idx, host);
+	model.params.option.band_on    = add_band_on_params(model.plugin);
+	model.params.slider.band_freq  = add_band_freq_params(model.plugin);
+	model.params.slider.band_mag   = add_band_mag_params(model.plugin);
+	model.params.slider.band_q     = add_band_q_params(model.plugin);
+	model.params.option.band_curve = add_band_curve_params(model.plugin);
+	return BLINK_OK;
+}
+
+auto blink_instance_destroy(blink_InstanceIdx instance_idx) -> blink_Error {
+	return blink::destroy_instance(&model.entities, instance_idx);
+}
+
+auto blink_instance_make() -> blink_InstanceIdx {
+	return blink::make_instance(&model.entities);
+}
+
+auto blink_instance_reset(blink_InstanceIdx instance_idx) -> blink_Error {
+	return BLINK_OK;
+}
+
+auto blink_instance_stream_init(blink_InstanceIdx instance_idx, blink_SR SR) -> blink_Error {
+	return BLINK_OK;
+}
+
+auto blink_effect_process(blink_UnitIdx unit_idx, const blink_VaryingData* varying, const blink_UniformData* uniform, const float* in, float* out) -> blink_Error {
+	auto& unit_dsp = model.entities.unit.get<UnitDSP>(unit_idx.value);
+	return dsp::process(&model, &unit_dsp, *varying, *uniform, in, out);
+}
+
+auto blink_terminate() -> blink_Error {
+	return blink::terminate(&model.entities);
+}
+
+auto blink_unit_add(blink_InstanceIdx instance_idx) -> blink_UnitIdx {
+	return blink::add_unit(&model.entities, instance_idx);
+}
+
+auto blink_unit_reset(blink_UnitIdx unit_idx) -> blink_Error {
+	auto& unit_dsp = model.entities.unit.get<UnitDSP>(unit_idx.value);
+	dsp::reset(&model, &unit_dsp);
+	return BLINK_OK;
+}
+
+auto blink_unit_stream_init(blink_UnitIdx unit_idx, blink_SR SR) -> blink_Error {
+	auto& unit_dsp = model.entities.unit.get<UnitDSP>(unit_idx.value);
+	unit_dsp.SR = SR;
+	dsp::reset(&model, &unit_dsp);
+	return BLINK_OK;
+}
+
+auto blink_frequency_response(const blink_UniformData* uniform, blink_FrameCount n, float* in_frequency, float* out_magnitude) -> blink_Error {
+	// @TODO: EQ frequency response
+	return BLINK_OK;
+}
+
+CMRC_DECLARE(plugin);
+
+auto blink_get_resource_data(const char* path) -> blink_ResourceData {
+	return blink::get_resource_data(&model.plugin, cmrc::plugin::get_filesystem(), path);
+}

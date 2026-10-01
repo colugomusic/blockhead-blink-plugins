@@ -2,21 +2,25 @@
 
 #include <blink/plugin-impl.hpp>
 
-namespace lofi {
+namespace eq {
 
 struct Params {
 	struct {
-		blink_ParamIdx sr;
-		blink_ParamIdx br;
-		blink_ParamIdx mix;
 	} env;
+	struct {
+		std::array<blink_ParamIdx, 8> band_on;
+		std::array<blink_ParamIdx, 8> band_curve;
+	} option;
+	struct {
+		std::array<blink_ParamIdx, 8> band_freq;
+		std::array<blink_ParamIdx, 8> band_mag;
+		std::array<blink_ParamIdx, 8> band_q;
+	} slider;
 };
 
 struct UnitDSP {
 	blink_SR SR;
 	blink::BlockPositions block_positions;
-	float phase = 0.0f;
-	std::array<float, 2> value;
 };
 
 using Instance = blink::Instance<>;
@@ -28,4 +32,4 @@ struct Model {
 	Params params;
 };
 
-} // namespace lofi
+} // namespace eq

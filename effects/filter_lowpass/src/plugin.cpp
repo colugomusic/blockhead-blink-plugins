@@ -3,6 +3,7 @@
 #include "dsp.hpp"
 #include "model.h"
 #include <blink_std.h>
+#include <cmrc/cmrc.hpp>
 
 using namespace filter_lowpass;
 
@@ -12,7 +13,7 @@ auto blink_get_error_string(blink_Error error) -> blink_TempString {
 	return {blink::get_std_error_string(static_cast<blink_StdError>(error))};
 }
 
-auto blink_effect_get_info(blink_InstanceIdx instance_idx) -> blink_EffectInstanceInfo {
+auto blink_effect_get_info(blink_InstanceIdx) -> blink_EffectInstanceInfo {
 	return {-1, -1, -1, -1};
 }
 
@@ -44,11 +45,11 @@ auto blink_instance_make() -> blink_InstanceIdx {
 	return blink::make_instance(&model.entities);
 }
 
-auto blink_instance_reset(blink_InstanceIdx instance_idx) -> blink_Error {
+auto blink_instance_reset(blink_InstanceIdx) -> blink_Error {
 	return BLINK_OK;
 }
 
-auto blink_instance_stream_init(blink_InstanceIdx instance_idx, blink_SR SR) -> blink_Error {
+auto blink_instance_stream_init(blink_InstanceIdx, blink_SR) -> blink_Error {
 	return BLINK_OK;
 }
 

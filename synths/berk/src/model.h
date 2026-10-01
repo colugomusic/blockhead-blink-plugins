@@ -1,13 +1,11 @@
 #pragma once
 
-#include <blink/plugin_impl.hpp>
+#include <blink/plugin-impl.hpp>
 #include <snd/audio/filter/tract.hpp>
 #include <snd/audio/glottis.hpp>
 #include <snd/resampler.hpp>
-BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPFilters.h>
 #include <DSP/MLDSPGens.h>
-BLINK_QUIET_INCLUDE_END
 
 namespace berk_synth {
 

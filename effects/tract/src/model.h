@@ -1,11 +1,9 @@
 #pragma once
 
-#include <blink/plugin_impl.hpp>
+#include <blink/plugin-impl.hpp>
 #include <snd/audio/filter/tract.hpp>
 #include <snd/resampler.hpp>
-BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPBuffer.h>
-BLINK_QUIET_INCLUDE_END
 
 namespace tract_fx {
 

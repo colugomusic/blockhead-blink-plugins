@@ -1,11 +1,9 @@
 #pragma once
 
-#include <blink/plugin_impl.hpp>
+#include <blink/plugin-impl.hpp>
 #include <snd/audio/feedback_delay.hpp>
 #include <snd/audio/filter/1-pole.hpp>
-BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPGens.h>
-BLINK_QUIET_INCLUDE_END
 
 namespace resonator {
 

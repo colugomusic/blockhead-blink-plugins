@@ -1,6 +1,6 @@
 #pragma once
 
-#include <blink/plugin_impl.hpp>
+#include <blink/plugin-impl.hpp>
 #include <tweak/math.hpp>
 #include <tweak/tweak.hpp>
 #include <sstream>

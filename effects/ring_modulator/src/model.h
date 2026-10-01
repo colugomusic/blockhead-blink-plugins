@@ -1,9 +1,7 @@
 #pragma once
 
-#include <blink/plugin_impl.hpp>
-BLINK_QUIET_INCLUDE_BEGIN
+#include <blink/plugin-impl.hpp>
 #include <DSP/MLDSPGens.h>
-BLINK_QUIET_INCLUDE_END
 
 namespace ring_modulator {
 

@@ -4,6 +4,7 @@
 #include "model.h"
 #include "shared/tract_params.hpp"
 #include <blink_std.h>
+#include <cmrc/cmrc.hpp>
 
 using namespace tract_fx;
 

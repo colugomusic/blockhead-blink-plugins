@@ -1,4 +1,0 @@
-- name:              blink
-  path:              z:/dv/blink
-  #git:               https://github.com/colugomusic/blink.git
-  find-package-name: blink-plugin

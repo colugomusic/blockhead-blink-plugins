@@ -1,10 +1,10 @@
 #define BLINK_EXPORT
 
-#include "convert.h"
 #include "dsp.hpp"
 #include "model.h"
 #include "shared/harmonics.hpp"
 #include <blink_std.h>
+#include <cmrc/cmrc.hpp>
 #include <regex>
 
 using namespace resonator;
@@ -184,6 +184,7 @@ auto add_param_env_fm_ratio(const blink::Plugin& plugin) -> blink_ParamIdx {
 	const auto param_idx = blink::add::param::env(plugin, {"25aac401-9251-4f88-af77-14dddba78151"});
 	const auto env_idx   = add_env_fm_ratio(plugin);
 	const auto flags     = blink_ParamFlags_CanManipulate | blink_ParamFlags_DefaultActive | blink_ParamFlags_HostClamp;
+	blink::write::param::add_flags(plugin, param_idx, flags);
 	blink::write::param::name(plugin, param_idx, {"FM Ratio"});
 	blink::write::param::short_name(plugin, param_idx, {"Ratio"});
 	blink::write::param::group(plugin, param_idx, {"FM"});
@@ -208,7 +209,7 @@ auto add_param_env_harmonics_scale_snap_amount(const blink::Plugin& plugin) -> b
 	blink::write::param::override_env(plugin, param_idx, env_idx);
 	blink::write::param::offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
 	blink::write::param::clamp_range(plugin, param_idx, {0.0f, 1.0f});
-	blink::write::param::add_flags(plugin, param_idx, blink_ParamFlags_CanManipulate);
+	blink::write::param::add_flags(plugin, param_idx, flags);
 	return param_idx;
 }
 
@@ -233,7 +234,7 @@ auto blink_get_error_string(blink_Error error) -> blink_TempString {
 	return {blink::get_std_error_string(static_cast<blink_StdError>(error))};
 }
 
-auto blink_effect_get_info(blink_InstanceIdx instance_idx) -> blink_EffectInstanceInfo {
+auto blink_effect_get_info(blink_InstanceIdx) -> blink_EffectInstanceInfo {
 	return {-1, -1, -1, -1};
 }
 
@@ -275,11 +276,11 @@ auto blink_instance_make() -> blink_InstanceIdx {
 	return blink::make_instance(&model.entities);
 }
 
-auto blink_instance_reset(blink_InstanceIdx instance_idx) -> blink_Error {
+auto blink_instance_reset(blink_InstanceIdx) -> blink_Error {
 	return BLINK_OK;
 }
 
-auto blink_instance_stream_init(blink_InstanceIdx instance_idx, blink_SR SR) -> blink_Error {
+auto blink_instance_stream_init(blink_InstanceIdx, blink_SR) -> blink_Error {
 	return BLINK_OK;
 }
 

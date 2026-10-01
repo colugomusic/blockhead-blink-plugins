@@ -1,5 +1,6 @@
 #pragma once
 
+#include "convert.h"
 #include "model.h"
 #include <blink/dsp.hpp>
 #include <blink/search.hpp>

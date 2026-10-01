@@ -2,7 +2,7 @@
 
 #include <blink/tweak.hpp>
 #include <blink_std.h>
-#include <plugin_impl.hpp>
+#include <plugin-impl.hpp>
 
 namespace tweak {
 namespace harmonics_amount {

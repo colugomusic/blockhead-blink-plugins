@@ -1,11 +1,9 @@
 #pragma once
 
-#include <blink/plugin_impl.hpp>
+#include <blink/plugin-impl.hpp>
 
-BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPFilters.h>
 #include <DSP/MLDSPGens.h>
-BLINK_QUIET_INCLUDE_END
 
 struct NoiseGenerator {
 	ml::DSPVectorArray<2> operator()(

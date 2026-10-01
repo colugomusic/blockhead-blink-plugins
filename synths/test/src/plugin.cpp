@@ -1,8 +1,9 @@
 #define BLINK_EXPORT
 
-#include <blink_std.h>
 #include "dsp.hpp"
 #include "model.h"
+#include <blink_std.h>
+#include <cmrc/cmrc.hpp>
 
 using namespace test_synth;
 
@@ -28,7 +29,7 @@ auto add_param_env_amp(const blink::Plugin& plugin) -> blink_ParamIdx {
 	const auto flags = blink_ParamFlags_DefaultActive;
 	const auto env_idx = blink::read::env(model.plugin, param_idx);
 	blink::write::env::default_value(model.plugin, env_idx, 0.5f);
-	blink::write::param::add_flags(model.plugin, param_idx, blink_ParamFlags_DefaultActive);
+	blink::write::param::add_flags(model.plugin, param_idx, flags);
 	return param_idx;
 }
 
@@ -129,11 +130,11 @@ auto blink_instance_make() -> blink_InstanceIdx {
 	return blink::make_instance(&model.entities);
 }
 
-auto blink_instance_reset(blink_InstanceIdx instance_idx) -> blink_Error {
+auto blink_instance_reset(blink_InstanceIdx) -> blink_Error {
 	return BLINK_OK;
 }
 
-auto blink_instance_stream_init(blink_InstanceIdx instance_idx, blink_SR SR) -> blink_Error {
+auto blink_instance_stream_init(blink_InstanceIdx, blink_SR) -> blink_Error {
 	return BLINK_OK;
 }
 

@@ -3,6 +3,7 @@
 #include "dsp.hpp"
 #include "model.h"
 #include <blink_std.h>
+#include <cmrc/cmrc.hpp>
 
 using namespace freeze_fx;
 
@@ -53,7 +54,7 @@ auto blink_instance_reset(blink_InstanceIdx instance_idx) -> blink_Error {
 	return BLINK_OK;
 }
 
-auto blink_instance_stream_init(blink_InstanceIdx instance_idx, blink_SR SR) -> blink_Error {
+auto blink_instance_stream_init(blink_InstanceIdx, blink_SR) -> blink_Error {
 	return BLINK_OK;
 }
 

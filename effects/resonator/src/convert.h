@@ -2,9 +2,7 @@
 
 #include <cstdint>
 #include <blink/quiet-include.hpp>
-BLINK_QUIET_INCLUDE_BEGIN
 #include <DSP/MLDSPOps.h>
-BLINK_QUIET_INCLUDE_END
 
 namespace resonator {
 namespace convert {

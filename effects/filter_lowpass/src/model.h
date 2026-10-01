@@ -1,9 +1,7 @@
 #pragma once
 
-#include <blink/plugin_impl.hpp>
-BLINK_QUIET_INCLUDE_BEGIN
+#include <blink/plugin-impl.hpp>
 #include <DSP/MLDSPFilters.h>
-BLINK_QUIET_INCLUDE_END
 
 namespace filter_lowpass {
 

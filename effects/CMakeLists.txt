@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.30)
 project(blockhead-blink-plugins-effects)
 
 add_subdirectory(compressor)
+add_subdirectory(eq)
 add_subdirectory(filter_bandpass)
 add_subdirectory(filter_highpass)
 add_subdirectory(filter_lowpass)

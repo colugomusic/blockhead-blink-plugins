@@ -1,7 +1,7 @@
 #pragma once
 
 #include "buffer.h"
-#include <blink/plugin_impl.hpp>
+#include <blink/plugin-impl.hpp>
 
 namespace freeze_fx {
 

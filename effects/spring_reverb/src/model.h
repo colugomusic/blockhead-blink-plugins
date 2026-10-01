@@ -1,10 +1,8 @@
 #pragma once
 
-#include <blink/plugin_impl.hpp>
-BLINK_QUIET_INCLUDE_BEGIN
+#include <blink/plugin-impl.hpp>
 #include <DSP/MLDSPFilters.h>
 #include <DSP/MLDSPGens.h>
-BLINK_QUIET_INCLUDE_END
 
 namespace spring_reverb {
 
