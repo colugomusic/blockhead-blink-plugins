@@ -5,6 +5,7 @@ find_package(blink-plugin REQUIRED CONFIG)
 
 list(APPEND SRC
 	./src/dsp.hpp
+	./src/filters.hpp
 	./src/model.h
 	./src/plugin.cpp
 )

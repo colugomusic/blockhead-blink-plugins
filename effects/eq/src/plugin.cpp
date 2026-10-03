@@ -6,17 +6,22 @@
 
 #include "dsp.hpp"
 #include "model.h"
+#include <blink/tweak.hpp>
 #include <blink_std.h>
 #include <cmrc/cmrc.hpp>
+#include <plugin-impl.hpp>
 #include <ranges>
 
 using namespace eq;
 
-static Model model;
+namespace { // -----------------------------------------------------------------------------------------------
 
-static constexpr auto PLUGIN_UUID = blink_UUID{"6fccd4a1-8da9-45c3-8174-8b5d7f8cf846"};
+Model model;
 
-static constexpr auto BAND_ON_UUID = std::array<blink_UUID, 8>{
+constexpr auto PLUGIN_UUID = blink_UUID{"6fccd4a1-8da9-45c3-8174-8b5d7f8cf846"};
+constexpr auto BAND_COUNT  = 8;
+
+constexpr auto BAND_ON_UUID = std::array<blink_UUID, BAND_COUNT>{
 	blink_UUID{"6ecdb955-1a41-4c44-83a9-5fe2b2c27bb4"},
 	blink_UUID{"e28cb6db-29e4-4cbf-9623-5f1bd8f1c6fb"},
 	blink_UUID{"b85e6352-9f57-46bb-bf2f-aaf829288aaa"},
@@ -27,7 +32,7 @@ static constexpr auto BAND_ON_UUID = std::array<blink_UUID, 8>{
 	blink_UUID{"5dd691f3-243b-4420-8712-a7dd232831e1"},
 };
 
-static constexpr auto BAND_FREQ_UUID = std::array<blink_UUID, 8>{
+constexpr auto BAND_FREQ_UUID = std::array<blink_UUID, BAND_COUNT>{
 	blink_UUID{"77de5482-d145-4034-bb17-b8a93393a444"},
 	blink_UUID{"a6c4025e-2ea0-45e7-8731-041f4cee9036"},
 	blink_UUID{"0b72ef70-74c7-4314-9373-470adfbe15f0"},
@@ -38,7 +43,7 @@ static constexpr auto BAND_FREQ_UUID = std::array<blink_UUID, 8>{
 	blink_UUID{"a1972b5d-b817-4a9a-820a-aea65c3b7584"},
 };
 
-static constexpr auto BAND_MAGNITUDE_UUID = std::array<blink_UUID, 8>{
+constexpr auto BAND_MAGNITUDE_UUID = std::array<blink_UUID, BAND_COUNT>{
 	blink_UUID{"9e926878-e152-46df-8677-ceecb8a490d3"},
 	blink_UUID{"b7b1b6e4-88d7-4541-b291-5597650e35eb"},
 	blink_UUID{"c402588e-d9a6-4104-aaac-f95e4518dfa8"},
@@ -49,7 +54,7 @@ static constexpr auto BAND_MAGNITUDE_UUID = std::array<blink_UUID, 8>{
 	blink_UUID{"065ce3c5-1e39-4edb-9f4b-7828a4813897"},
 };
 
-static constexpr auto BAND_Q_UUID = std::array<blink_UUID, 8>{
+constexpr auto BAND_Q_UUID = std::array<blink_UUID, BAND_COUNT>{
 	blink_UUID{"f27589ef-6b0b-4d05-ae32-691d3d19430a"},
 	blink_UUID{"24b26e1a-cc37-4a02-8b83-e28e103b433a"},
 	blink_UUID{"be20bbd1-3d19-48f5-a732-14499a2aff38"},
@@ -60,7 +65,7 @@ static constexpr auto BAND_Q_UUID = std::array<blink_UUID, 8>{
 	blink_UUID{"0aad6c3e-ffcd-4cdc-a85a-b76c820ccfe8"},
 };
 
-static constexpr auto BAND_CURVE_UUID = std::array<blink_UUID, 8>{
+constexpr auto BAND_CURVE_UUID = std::array<blink_UUID, BAND_COUNT>{
 	blink_UUID{"3a603ae9-db0c-4975-96d3-efad14a75162"},
 	blink_UUID{"84135c5b-f7a4-47de-a3e1-847dab52e2a8"},
 	blink_UUID{"72cfb8f0-3cd1-4617-a3bb-2e3d2f2266bf"},
@@ -74,10 +79,9 @@ static constexpr auto BAND_CURVE_UUID = std::array<blink_UUID, 8>{
 enum struct curve_type {
 	shelf_lo,
 	shelf_hi,
-	cut_lo,
-	cut_hi,
+	pass_lo,
+	pass_hi,
 	bell,
-	notch
 };
 
 struct band_spec {
@@ -92,7 +96,7 @@ struct band_spec {
 	curve_type curve = curve_type::bell;
 };
 
-static constexpr auto BAND_SPECS = std::array<band_spec, 8>{
+constexpr auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 	band_spec{
 		.on_param_name    = "Band 1 Enabled",
 		.freq_param_name  = "Band 1 Frequency",
@@ -163,7 +167,49 @@ static constexpr auto BAND_SPECS = std::array<band_spec, 8>{
 	},
 };
 
-namespace { // -----------------------------------------------------------------------------------------------
+constexpr auto MAGNITUDE_DEFAULT = 0.0f;
+constexpr auto MAGNITUDE_MAX     = 30.0f;
+
+auto magnitude_to_linear(float v) -> float                      { return v / MAGNITUDE_MAX; }
+auto linear_to_magnitude(float v) -> float                      { return v * MAGNITUDE_MAX; }
+auto magnitude_stepify(float v) -> float                        { return magnitude_to_linear(tweak::math::stepify<100>(linear_to_magnitude(v))); }
+auto magnitude_constrain(float v) -> float                      { return std::clamp(v, -1.0f, 1.0f); }
+auto magnitude_increment(float v, bool precise) -> float        { return magnitude_to_linear(tweak::increment<1, 10>(linear_to_magnitude(v), precise)); };
+auto magnitude_decrement(float v, bool precise) -> float        { return magnitude_to_linear(tweak::decrement<1, 10>(linear_to_magnitude(v), precise)); };
+auto magnitude_drag(float v, int amount, bool precise) -> float { return magnitude_to_linear(tweak::drag<float, 1, 10>(linear_to_magnitude(v), amount / 5, precise)); };
+
+auto magnitude_from_string(const char* str, float* out) -> blink_Bool {
+	if (const auto mag = tweak::find_number<float>(str)) {
+		*out = magnitude_to_linear(*mag);
+		return {true};
+	}
+	return {false};
+}
+
+auto magnitude_to_string(float v, char buffer[BLINK_STRING_MAX]) -> void {
+	auto ss = std::stringstream{};
+	ss << linear_to_magnitude(v) << " dB";
+	blink::tweak::write_string(ss.str(), buffer);
+}
+
+auto magnitude_tweaker() -> blink_TweakerReal {
+	auto out        = blink_TweakerReal{0};
+	out.constrain   = magnitude_constrain;
+	out.decrement   = magnitude_decrement;
+	out.drag        = magnitude_drag;
+	out.from_string = magnitude_from_string;
+	out.increment   = magnitude_increment;
+	out.stepify     = magnitude_stepify;
+	out.to_string   = magnitude_to_string;
+	return out;
+}
+
+auto add_magnitude_slider(const blink::Plugin& plugin) -> blink_SliderRealIdx {
+	const auto idx = blink::add::slider::empty_real(plugin.host);
+	plugin.host.write_slider_real_default_value(plugin.host.usr, idx, MAGNITUDE_DEFAULT);
+	plugin.host.write_slider_real_tweaker(plugin.host.usr, idx, magnitude_tweaker());
+	return idx;
+}
 
 auto add_band_on_option_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::option(plugin, uuid);
@@ -176,61 +222,83 @@ auto add_band_on_option_param(const blink::Plugin& plugin, blink_UUID uuid, cons
 
 auto add_band_freq_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
-	//const auto slider_idx = blink::add::slider::filter_frequency(
+	const auto slider_idx = blink::add::slider::filter_frequency(plugin.host, spec.frequency);
 	const auto flags      = blink_ParamFlags_MovesDisplay;
-	// @TODO:
-	return {};
+	blink::write::param::slider(plugin, param_idx, slider_idx);
+	blink::write::param::add_flags(plugin, param_idx, flags);
+	blink::write::param::name(plugin, param_idx, {spec.freq_param_name.data()});
+	return param_idx;
 }
 
 auto add_band_mag_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
-	return {};
+	// Create this by starting with the default filter frequency slider parameter.
+	// The UUID is overwritten with ours.
+	const auto param_idx  = blink::add::param::slider_real(plugin, {BLINK_STD_UUID_FILTER_FREQUENCY});
+	const auto flags      = blink_ParamFlags_MovesDisplay;
+	blink::write::param::uuid(plugin, param_idx, uuid);
+	blink::write::param::name(plugin, param_idx, {spec.mag_param_name.data()});
+	blink::write::param::add_flags(plugin, param_idx, flags);
+	return param_idx;
 }
 
 auto add_band_q_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
-	return {};
+	// Create this by starting with the default filter resonaance slider parameter.
+	// The UUID is overwritten with ours.
+	const auto param_idx  = blink::add::param::slider_real(plugin, {BLINK_STD_UUID_FILTER_RESONANCE});
+	const auto flags      = blink_ParamFlags_MovesDisplay;
+	blink::write::param::uuid(plugin, param_idx, uuid);
+	blink::write::param::name(plugin, param_idx, {spec.q_param_name.data()});
+	blink::write::param::add_flags(plugin, param_idx, flags);
+	return param_idx;
 }
 
 auto add_band_curve_option_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
-	return {};
+	const auto param_idx = blink::add::param::option(plugin, uuid);
+	const auto flags     = blink_ParamFlags_MovesDisplay;
+	blink::write::param::name(plugin, param_idx, {spec.curve_param_name.data()});
+	blink::write::param::add_flags(plugin, param_idx, flags);
+	blink::write::param::strings(plugin, param_idx, {{"Shelf Low", "Shelf High", "Cut Low", "Cut High", "Bell"}});
+	blink::write::param::option_default_value(plugin, param_idx, static_cast<int64_t>(spec.curve));
+	return param_idx;
 }
 
-auto add_band_params(const blink::Plugin& plugin, auto add_fn) -> std::array<blink_ParamIdx, 8> {
-	auto arr = std::array<blink_ParamIdx, 8>{};
+auto add_band_params(const blink::Plugin& plugin, auto add_fn) -> std::array<blink_ParamIdx, BAND_COUNT> {
+	auto arr = std::array<blink_ParamIdx, BAND_COUNT>{};
 	for (const auto i : std::views::iota(0, 8)) {
 		arr[i] = add_fn(plugin, i);
 	}
 	return arr;
 }
 
-auto add_band_on_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, 8> {
+auto add_band_on_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, BAND_COUNT> {
 	auto fn_add = [](const blink::Plugin& plugin, size_t band_index) {
 		return add_band_on_option_param(plugin, BAND_ON_UUID[band_index], BAND_SPECS[band_index]);
 	};
 	return add_band_params(plugin, fn_add);
 }
 
-auto add_band_freq_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, 8> {
+auto add_band_freq_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, BAND_COUNT> {
 	auto fn_add = [](const blink::Plugin& plugin, size_t band_index) {
 		return add_band_freq_slider_param(plugin, BAND_FREQ_UUID[band_index], BAND_SPECS[band_index]);
 	};
 	return add_band_params(plugin, fn_add);
 }
 
-auto add_band_mag_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, 8> {
+auto add_band_mag_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, BAND_COUNT> {
 	auto fn_add = [](const blink::Plugin& plugin, size_t band_index) {
 		return add_band_mag_slider_param(plugin, BAND_MAGNITUDE_UUID[band_index], BAND_SPECS[band_index]);
 	};
 	return add_band_params(plugin, fn_add);
 }
 
-auto add_band_q_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, 8> {
+auto add_band_q_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, BAND_COUNT> {
 	auto fn_add = [](const blink::Plugin& plugin, size_t band_index) {
 		return add_band_q_slider_param(plugin, BAND_Q_UUID[band_index], BAND_SPECS[band_index]);
 	};
 	return add_band_params(plugin, fn_add);
 }
 
-auto add_band_curve_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, 8> {
+auto add_band_curve_params(const blink::Plugin& plugin) -> std::array<blink_ParamIdx, BAND_COUNT> {
 	auto fn_add = [](const blink::Plugin& plugin, size_t band_index) {
 		return add_band_curve_option_param(plugin, BAND_CURVE_UUID[band_index], BAND_SPECS[band_index]);
 	};
@@ -264,6 +332,15 @@ auto blink_init(blink_PluginIdx plugin_idx, blink_HostFns host) -> blink_Error {
 	model.params.slider.band_mag   = add_band_mag_params(model.plugin);
 	model.params.slider.band_q     = add_band_q_params(model.plugin);
 	model.params.option.band_curve = add_band_curve_params(model.plugin);
+	auto fr_info                    = blink_FrequencyResponseInfo{};
+	fr_info.band_count              = BAND_COUNT;
+	fr_info.extra_count             = 0;
+	fr_info.enabled                 = model.params.option.band_on.data();
+	fr_info.mb_left_horizontal      = model.params.slider.band_freq.data();
+	fr_info.mb_left_vertical        = model.params.slider.band_mag.data();
+	fr_info.mb_left_horizontal_ctrl = model.params.option.band_curve.data();
+	fr_info.mb_left_vertical_ctrl   = model.params.slider.band_q.data();
+	blink::add::frequency_response(model.plugin, fr_info);
 	return BLINK_OK;
 }
 
@@ -275,11 +352,11 @@ auto blink_instance_make() -> blink_InstanceIdx {
 	return blink::make_instance(&model.entities);
 }
 
-auto blink_instance_reset(blink_InstanceIdx instance_idx) -> blink_Error {
+auto blink_instance_reset(blink_InstanceIdx) -> blink_Error {
 	return BLINK_OK;
 }
 
-auto blink_instance_stream_init(blink_InstanceIdx instance_idx, blink_SR SR) -> blink_Error {
+auto blink_instance_stream_init(blink_InstanceIdx, blink_SR) -> blink_Error {
 	return BLINK_OK;
 }
 

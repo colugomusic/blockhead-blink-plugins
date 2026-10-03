@@ -6,8 +6,6 @@ namespace eq {
 
 struct Params {
 	struct {
-	} env;
-	struct {
 		std::array<blink_ParamIdx, 8> band_on;
 		std::array<blink_ParamIdx, 8> band_curve;
 	} option;
