@@ -77,11 +77,11 @@ constexpr auto BAND_CURVE_UUID = std::array<blink_UUID, BAND_COUNT>{
 };
 
 enum struct curve_type {
-	shelf_lo,
-	shelf_hi,
-	pass_lo,
-	pass_hi,
 	bell,
+	pass_hi,
+	pass_lo,
+	shelf_hi,
+	shelf_lo,
 };
 
 struct band_spec {
