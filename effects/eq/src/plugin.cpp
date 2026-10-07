@@ -332,14 +332,14 @@ auto blink_init(blink_PluginIdx plugin_idx, blink_HostFns host) -> blink_Error {
 	model.params.slider.band_mag   = add_band_mag_params(model.plugin);
 	model.params.slider.band_q     = add_band_q_params(model.plugin);
 	model.params.option.band_curve = add_band_curve_params(model.plugin);
-	auto fr_info                    = blink_FrequencyResponseInfo{};
-	fr_info.band_count              = BAND_COUNT;
-	fr_info.extra_count             = 0;
-	fr_info.enabled                 = model.params.option.band_on.data();
-	fr_info.mb_left_horizontal      = model.params.slider.band_freq.data();
-	fr_info.mb_left_vertical        = model.params.slider.band_mag.data();
-	fr_info.mb_left_horizontal_ctrl = model.params.option.band_curve.data();
-	fr_info.mb_left_vertical_ctrl   = model.params.slider.band_q.data();
+	auto fr_info                   = blink_FrequencyResponseInfo{};
+	fr_info.band_count             = BAND_COUNT;
+	fr_info.extra_count            = 0;
+	fr_info.enabled                = model.params.option.band_on.data();
+	fr_info.frequency              = model.params.slider.band_freq.data();
+	fr_info.magnitude              = model.params.slider.band_mag.data();
+	fr_info.mb_right_horizontal    = model.params.option.band_curve.data();
+	fr_info.mb_right_vertical      = model.params.slider.band_q.data();
 	blink::add::frequency_response(model.plugin, fr_info);
 	return BLINK_OK;
 }
