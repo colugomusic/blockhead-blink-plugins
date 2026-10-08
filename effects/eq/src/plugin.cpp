@@ -5,6 +5,7 @@
 #endif
 
 #include "dsp.hpp"
+#include "filters.hpp"
 #include "model.h"
 #include <blink/tweak.hpp>
 #include <blink_std.h>
@@ -14,6 +15,7 @@
 
 using namespace eq;
 
+namespace eq {
 namespace { // -----------------------------------------------------------------------------------------------
 
 Model model;
@@ -92,11 +94,12 @@ struct band_spec {
 	std::string_view curve_param_name;
 	bool enabled = false;
 	float frequency = 1000.0f;
+	float q         = 0.0f;
 	float magnitude = 0.0f;
 	curve_type curve = curve_type::bell;
 };
 
-constexpr auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
+static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 	band_spec{
 		.on_param_name    = "Band 1 Enabled",
 		.freq_param_name  = "Band 1 Frequency",
@@ -104,7 +107,7 @@ constexpr auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.q_param_name     = "Band 1 Q",
 		.curve_param_name = "Band 1 Curve Type",
 		.enabled          = true,
-		.frequency        = 100.0f,
+		.frequency        = blink::math::convert::filter_hz_to_linear(100.0f),
 		.magnitude        = 0.0f,
 		.curve            = curve_type::shelf_lo
 	},
@@ -115,8 +118,8 @@ constexpr auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.q_param_name     = "Band 2 Q",
 		.curve_param_name = "Band 2 Curve Type",
 		.enabled          = true,
-		.frequency        = 600.0f,
-		.magnitude        = 0.0f,
+		.frequency        = blink::math::convert::filter_hz_to_linear(600.0f),
+		.magnitude        = 1.0f,
 		.curve            = curve_type::bell
 	},
 	band_spec{
@@ -126,7 +129,7 @@ constexpr auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.q_param_name     = "Band 3 Q",
 		.curve_param_name = "Band 3 Curve Type",
 		.enabled          = true,
-		.frequency        = 4000.0f,
+		.frequency        = blink::math::convert::filter_hz_to_linear(4000.0f),
 		.magnitude        = 0.0f,
 		.curve            = curve_type::shelf_hi
 	},
@@ -167,6 +170,31 @@ constexpr auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 	},
 };
 
+struct audio_data {
+	struct {
+		std::array<blink::uniform::Option, BAND_COUNT> band_on;
+		std::array<blink::uniform::Option, BAND_COUNT> band_curve;
+	} option;
+	struct {
+		std::array<blink::uniform::SliderReal, BAND_COUNT> band_freq;
+		std::array<blink::uniform::SliderReal, BAND_COUNT> band_mag;
+		std::array<blink::uniform::SliderReal, BAND_COUNT> band_q;
+	} slider;
+};
+
+[[nodiscard]]
+auto make_audio_data(const Model& model, const blink_UniformParamData* param_data) -> audio_data {
+	auto out = audio_data{};
+	for (size_t i = 0; i < BAND_COUNT; i++) {
+		out.option.band_on[i]    = blink::make_option_data(model.plugin, param_data, model.params.option.band_on[i]);
+		out.option.band_curve[i] = blink::make_option_data(model.plugin, param_data, model.params.option.band_curve[i]);
+		out.slider.band_freq[i]  = blink::make_slider_real_data(model.plugin, param_data, model.params.slider.band_freq[i]);
+		out.slider.band_mag[i]   = blink::make_slider_real_data(model.plugin, param_data, model.params.slider.band_mag[i]);
+		out.slider.band_q[i]     = blink::make_slider_real_data(model.plugin, param_data, model.params.slider.band_q[i]);
+	}
+	return out;
+}
+
 constexpr auto MAGNITUDE_DEFAULT = 0.0f;
 constexpr auto MAGNITUDE_MAX     = 30.0f;
 
@@ -204,9 +232,9 @@ auto magnitude_tweaker() -> blink_TweakerReal {
 	return out;
 }
 
-auto add_magnitude_slider(const blink::Plugin& plugin) -> blink_SliderRealIdx {
+auto add_magnitude_slider(const blink::Plugin& plugin, float default_value) -> blink_SliderRealIdx {
 	const auto idx = blink::add::slider::empty_real(plugin.host);
-	plugin.host.write_slider_real_default_value(plugin.host.usr, idx, MAGNITUDE_DEFAULT);
+	plugin.host.write_slider_real_default_value(plugin.host.usr, idx, default_value);
 	plugin.host.write_slider_real_tweaker(plugin.host.usr, idx, magnitude_tweaker());
 	return idx;
 }
@@ -231,11 +259,10 @@ auto add_band_freq_slider_param(const blink::Plugin& plugin, blink_UUID uuid, co
 }
 
 auto add_band_mag_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
-	// Create this by starting with the default filter frequency slider parameter.
-	// The UUID is overwritten with ours.
-	const auto param_idx  = blink::add::param::slider_real(plugin, {BLINK_STD_UUID_FILTER_FREQUENCY});
+	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
+    const auto slider_idx = add_magnitude_slider(plugin, spec.magnitude);
 	const auto flags      = blink_ParamFlags_MovesDisplay;
-	blink::write::param::uuid(plugin, param_idx, uuid);
+    blink::write::param::slider(plugin, param_idx, slider_idx);
 	blink::write::param::name(plugin, param_idx, {spec.mag_param_name.data()});
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	return param_idx;
@@ -245,7 +272,9 @@ auto add_band_q_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const
 	// Create this by starting with the default filter resonaance slider parameter.
 	// The UUID is overwritten with ours.
 	const auto param_idx  = blink::add::param::slider_real(plugin, {BLINK_STD_UUID_FILTER_RESONANCE});
+	const auto slider_idx = blink::read::slider_real(plugin, param_idx);
 	const auto flags      = blink_ParamFlags_MovesDisplay;
+	blink::write::slider::default_value(plugin, slider_idx, spec.q);
 	blink::write::param::uuid(plugin, param_idx, uuid);
 	blink::write::param::name(plugin, param_idx, {spec.q_param_name.data()});
 	blink::write::param::add_flags(plugin, param_idx, flags);
@@ -305,7 +334,18 @@ auto add_band_curve_params(const blink::Plugin& plugin) -> std::array<blink_Para
 	return add_band_params(plugin, fn_add);
 }
 
+[[nodiscard]]
+auto frequency_response(const eq::audio_data&, float x) -> float {
+	const auto gain_db = -6.0f;
+	const auto A = std::pow(10.0f, gain_db / 40.0f);
+	const auto coeffs = filters::bell::make_coeffs<float>(blink::math::convert::filter_hz_to_linear(600.0f), 0.1f, A);
+	auto y = filters::bell::transfer(coeffs, x);
+	y -= 1;
+	return y;
+}
+
 } // ---------------------------------------------------------------------------------------------------------
+} // eq
 
 auto blink_get_error_string(blink_Error error) -> blink_TempString {
 	return {blink::get_std_error_string(static_cast<blink_StdError>(error))};
@@ -386,8 +426,11 @@ auto blink_unit_stream_init(blink_UnitIdx unit_idx, blink_SR SR) -> blink_Error 
 	return BLINK_OK;
 }
 
-auto blink_frequency_response(const blink_UniformData* uniform, blink_FrameCount n, float* in_frequency, float* out_magnitude) -> blink_Error {
-	// @TODO: EQ frequency response
+auto blink_frequency_response(const blink_UniformParamData* param_data, blink_FrequencyResponseIdx, blink_FrameCount n, const float* in_x_01, float* out_y_01) -> blink_Error {
+	const auto audio_data = make_audio_data(model, param_data);
+	for (uint64_t i = 0; i < n.value; i++) {
+		out_y_01[i] = frequency_response(audio_data, in_x_01[i]);
+	}
 	return BLINK_OK;
 }
 
