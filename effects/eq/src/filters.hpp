@@ -63,8 +63,8 @@ auto transfer(const bell::coeffs<float>& coeffs, std::span<const float> in_omega
 
 namespace eq::filters::pass_hi {
 
-template <typename T> struct coeffs { T g0, g1, g2, gk; };
-template <typename T> struct state  { T ic1eq, ic2eq; };
+template <typename T> struct coeffs {};
+template <typename T> struct state  {};
 
 template <typename T> [[nodiscard]]
 auto make_coeffs(T omega, T k) -> pass_hi::coeffs<T> {
