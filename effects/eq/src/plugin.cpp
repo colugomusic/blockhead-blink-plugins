@@ -94,7 +94,7 @@ struct band_spec {
 	std::string_view curve_param_name;
 	bool enabled = false;
 	float frequency = 1000.0f;
-	float q         = 0.0f;
+	float q         = 1.0f;
 	float magnitude = 0.0f;
 	curve_type curve = curve_type::bell;
 };
@@ -109,7 +109,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.enabled          = true,
 		.frequency        = blink::math::convert::filter_hz_to_linear(100.0f),
 		.magnitude        = 0.0f,
-		.curve            = curve_type::shelf_lo
+		.curve            = curve_type::bell
 	},
 	band_spec{
 		.on_param_name    = "Band 2 Enabled",
@@ -119,7 +119,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.curve_param_name = "Band 2 Curve Type",
 		.enabled          = true,
 		.frequency        = blink::math::convert::filter_hz_to_linear(600.0f),
-		.magnitude        = 1.0f,
+		.magnitude        = 0.5f,
 		.curve            = curve_type::bell
 	},
 	band_spec{
@@ -129,9 +129,9 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.q_param_name     = "Band 3 Q",
 		.curve_param_name = "Band 3 Curve Type",
 		.enabled          = true,
-		.frequency        = blink::math::convert::filter_hz_to_linear(4000.0f),
-		.magnitude        = 0.0f,
-		.curve            = curve_type::shelf_hi
+		.frequency        = blink::math::convert::filter_hz_to_linear(1000.0f),
+		.magnitude        = 1.0f,
+		.curve            = curve_type::bell
 	},
 	band_spec{
 		.on_param_name    = "Band 4 Enabled",
@@ -139,6 +139,10 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.mag_param_name   = "Band 4 Magnitude",
 		.q_param_name     = "Band 4 Q",
 		.curve_param_name = "Band 4 Curve Type",
+		.enabled          = true,
+		.frequency        = blink::math::convert::filter_hz_to_linear(2000.0f),
+		.magnitude        = -1.0f,
+		.curve            = curve_type::bell
 	},
 	band_spec{
 		.on_param_name    = "Band 5 Enabled",
@@ -146,6 +150,10 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.mag_param_name   = "Band 5 Magnitude",
 		.q_param_name     = "Band 5 Q",
 		.curve_param_name = "Band 5 Curve Type",
+		.enabled          = true,
+		.frequency        = blink::math::convert::filter_hz_to_linear(4000.0f),
+		.magnitude        = -0.5f,
+		.curve            = curve_type::bell
 	},
 	band_spec{
 		.on_param_name    = "Band 6 Enabled",
@@ -196,19 +204,19 @@ auto make_audio_data(const Model& model, const blink_UniformParamData* param_dat
 }
 
 constexpr auto MAGNITUDE_DEFAULT = 0.0f;
-constexpr auto MAGNITUDE_MAX     = 30.0f;
+constexpr auto MAGNITUDE_MAX     = 60.0f;
 
-auto magnitude_to_linear(float v) -> float                      { return v / MAGNITUDE_MAX; }
-auto linear_to_magnitude(float v) -> float                      { return v * MAGNITUDE_MAX; }
-auto magnitude_stepify(float v) -> float                        { return magnitude_to_linear(tweak::math::stepify<100>(linear_to_magnitude(v))); }
+auto magnitude_db_to_linear(float v) -> float                   { return v / MAGNITUDE_MAX; }
+auto linear_to_magnitude_db(float v) -> float                   { return v * MAGNITUDE_MAX; }
+auto magnitude_stepify(float v) -> float                        { return magnitude_db_to_linear(tweak::math::stepify<100>(linear_to_magnitude_db(v))); }
 auto magnitude_constrain(float v) -> float                      { return std::clamp(v, -1.0f, 1.0f); }
-auto magnitude_increment(float v, bool precise) -> float        { return magnitude_to_linear(tweak::increment<1, 10>(linear_to_magnitude(v), precise)); };
-auto magnitude_decrement(float v, bool precise) -> float        { return magnitude_to_linear(tweak::decrement<1, 10>(linear_to_magnitude(v), precise)); };
-auto magnitude_drag(float v, int amount, bool precise) -> float { return magnitude_to_linear(tweak::drag<float, 1, 10>(linear_to_magnitude(v), amount / 5, precise)); };
+auto magnitude_increment(float v, bool precise) -> float        { return magnitude_db_to_linear(tweak::increment<1, 10>(linear_to_magnitude_db(v), precise)); };
+auto magnitude_decrement(float v, bool precise) -> float        { return magnitude_db_to_linear(tweak::decrement<1, 10>(linear_to_magnitude_db(v), precise)); };
+auto magnitude_drag(float v, int amount, bool precise) -> float { return magnitude_db_to_linear(tweak::drag<float, 1, 10>(linear_to_magnitude_db(v), amount / 5, precise)); };
 
 auto magnitude_from_string(const char* str, float* out) -> blink_Bool {
 	if (const auto mag = tweak::find_number<float>(str)) {
-		*out = magnitude_to_linear(*mag);
+		*out = magnitude_db_to_linear(*mag);
 		return {true};
 	}
 	return {false};
@@ -216,7 +224,7 @@ auto magnitude_from_string(const char* str, float* out) -> blink_Bool {
 
 auto magnitude_to_string(float v, char buffer[BLINK_STRING_MAX]) -> void {
 	auto ss = std::stringstream{};
-	ss << linear_to_magnitude(v) << " dB";
+	ss << linear_to_magnitude_db(v) << " dB";
 	blink::tweak::write_string(ss.str(), buffer);
 }
 
@@ -335,13 +343,20 @@ auto add_band_curve_params(const blink::Plugin& plugin) -> std::array<blink_Para
 }
 
 [[nodiscard]]
-auto frequency_response(const eq::audio_data&, float x) -> float {
-	const auto gain_db = -6.0f;
-	const auto A = std::pow(10.0f, gain_db / 40.0f);
-	const auto coeffs = filters::bell::make_coeffs<float>(blink::math::convert::filter_hz_to_linear(600.0f), 0.1f, A);
-	auto y = filters::bell::transfer(coeffs, x);
-	y -= 1;
-	return y;
+auto frequency_response(const eq::audio_data& audio_data, float x) -> float {
+	auto y = float{1.0f};
+	for (size_t i = 0; i < BAND_COUNT; i++) {
+		if (audio_data.option.band_on[i].value > 0) {
+			const auto omega     = audio_data.slider.band_freq[i].value;
+			const auto magnitude = audio_data.slider.band_mag[i].value;
+			const auto q         = audio_data.slider.band_q[i].value;
+			const auto k         = std::lerp(0.1f, 1.0f, q);
+			const auto A         = blink::math::convert::db_to_linear(linear_to_magnitude_db(magnitude) / 2.0f);
+			const auto coeffs    = filters::bell::make_coeffs<float>(omega, k, A);
+			y *= filters::bell::transfer(coeffs, x);
+		}
+	}
+	return blink::math::convert::linear_to_db(y) / MAGNITUDE_MAX;
 }
 
 } // ---------------------------------------------------------------------------------------------------------
