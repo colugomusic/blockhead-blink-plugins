@@ -349,8 +349,8 @@ auto frequency_response(const eq::audio_data& audio_data, float x) -> float {
 	// Display coords (filter_hz_to_linear) are log-pitch, not proportional to Hz.
 	// Convert to actual Hz then normalise by the display's top frequency (~20 kHz)
 	// so that filter bandwidths/slopes scale correctly in octaves. No sample rate needed.
-	static const auto F_MAX   = blink::math::convert::linear_to_filter_hz(1.0f);
-	auto display_to_omega = [F_MAX](float display_x) -> float {
+	auto display_to_omega = [](float display_x) -> float {
+		static const auto F_MAX   = blink::math::convert::linear_to_filter_hz(1.0f);
 		return std::clamp(blink::math::convert::linear_to_filter_hz(display_x) / F_MAX, 0.0001f, 0.9999f);
 	};
 	const auto omega_x = display_to_omega(x);
@@ -364,12 +364,12 @@ auto frequency_response(const eq::audio_data& audio_data, float x) -> float {
 			const auto A         = blink::math::convert::db_to_linear(linear_to_magnitude_db(magnitude) / 2.0f);
 			switch (static_cast<curve_type>(audio_data.option.band_curve[i].value)) {
 				case curve_type::shelf_lo: {
-					const auto coeffs = filters::shelf_lo::make_coeffs<float>(omega, k, A, 8);
+					const auto coeffs = filters::shelf_lo::make_coeffs<float>(omega, A, 1);
 					y *= filters::shelf_lo::transfer(coeffs, omega_x);
 					break;
 				}
 				case curve_type::shelf_hi: {
-					const auto coeffs = filters::shelf_hi::make_coeffs<float>(omega, k, A, 8);
+					const auto coeffs = filters::shelf_hi::make_coeffs<float>(omega, A, 8);
 					y *= filters::shelf_hi::transfer(coeffs, omega_x);
 					break;
 				}
@@ -379,7 +379,7 @@ auto frequency_response(const eq::audio_data& audio_data, float x) -> float {
 					break;
 				}
 				case curve_type::pass_hi: {
-					const auto coeffs = filters::pass_hi::make_coeffs<float>(omega, k, 8);
+					const auto coeffs = filters::pass_hi::make_coeffs<float>(omega, k, 1);
 					y *= filters::pass_hi::transfer(coeffs, omega_x);
 					break;
 				}
