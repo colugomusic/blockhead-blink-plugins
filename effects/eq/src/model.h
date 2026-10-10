@@ -12,7 +12,8 @@ struct Params {
 	struct {
 		std::array<blink_ParamIdx, 8> band_freq;
 		std::array<blink_ParamIdx, 8> band_mag;
-		std::array<blink_ParamIdx, 8> band_q;
+		std::array<blink_ParamIdx, 8> band_slope;
+		std::array<blink_ParamIdx, 8> band_bandwidth;
 	} slider;
 };
 

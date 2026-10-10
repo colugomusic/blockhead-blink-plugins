@@ -79,11 +79,7 @@ constexpr auto BAND_CURVE_UUID = std::array<blink_UUID, BAND_COUNT>{
 };
 
 enum struct curve_type {
-	shelf_lo,
-	shelf_hi,
-	pass_lo,
-	pass_hi,
-	bell,
+	band_shelf,
 };
 
 struct band_spec {
@@ -94,9 +90,10 @@ struct band_spec {
 	std::string_view curve_param_name;
 	bool enabled = false;
 	float frequency = 1000.0f;
-	float q         = 0.0f;
 	float magnitude = 0.0f;
-	curve_type curve = curve_type::bell;
+	float slope     = 0.5f;
+	float bandwidth = 0.5f;
+	curve_type curve = curve_type::band_shelf;
 };
 
 static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
@@ -108,9 +105,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.curve_param_name = "Band 1 Curve Type",
 		.enabled          = false,
 		.frequency        = blink::math::convert::filter_hz_to_linear(100.0f),
-		.q                = 0.9f,
 		.magnitude        = 0.9f,
-		.curve            = curve_type::bell
 	},
 	band_spec{
 		.on_param_name    = "Band 2 Enabled",
@@ -120,9 +115,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.curve_param_name = "Band 2 Curve Type",
 		.enabled          = false,
 		.frequency        = blink::math::convert::filter_hz_to_linear(400.0f),
-		.q                = 0.9f,
 		.magnitude        = 0.9f,
-		.curve            = curve_type::bell
 	},
 	band_spec{
 		.on_param_name    = "Band 3 Enabled",
@@ -132,9 +125,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.curve_param_name = "Band 3 Curve Type",
 		.enabled          = true,
 		.frequency        = blink::math::convert::filter_hz_to_linear(600.0f),
-		.q                = 0.9f,
 		.magnitude        = 0.9f,
-		.curve            = curve_type::bell
 	},
 	band_spec{
 		.on_param_name    = "Band 4 Enabled",
@@ -144,9 +135,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.curve_param_name = "Band 4 Curve Type",
 		.enabled          = false,
 		.frequency        = blink::math::convert::filter_hz_to_linear(1000.0f),
-		.q                = 0.9f,
 		.magnitude        = -0.9f,
-		.curve            = curve_type::bell
 	},
 	band_spec{
 		.on_param_name    = "Band 5 Enabled",
@@ -156,9 +145,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.curve_param_name = "Band 5 Curve Type",
 		.enabled          = false,
 		.frequency        = blink::math::convert::filter_hz_to_linear(2000.0f),
-		.q                = 0.9f,
 		.magnitude        = -0.5f,
-		.curve            = curve_type::bell
 	},
 	band_spec{
 		.on_param_name    = "Band 6 Enabled",
