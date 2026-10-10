@@ -78,21 +78,22 @@ struct transfer_svf_to_bp_result {
 
 [[nodiscard]]
 auto transfer_lp_to_bp(std::complex<float> v, float _2R) -> std::complex<float> {
-	const auto a = 1.0f / v;
+	static constexpr auto EPSILON = 0.00000001f;
+	const auto a = 1.0f / (v + EPSILON);
 	const auto b = v + a;
 	return b * (1.0f / _2R);
 }
 
 [[nodiscard]]
 auto transfer_svf_to_bp(float f, float F, float _2R, float BW2R) -> transfer_svf_to_bp_result {
-	const auto s     = transfer_lp_to_bp({0.0f, f / F}, _2R);
+	const auto s     = transfer_lp_to_bp({0.0f, f / F}, BW2R);
 	const auto spow2 = s * s;
 	const auto a     = spow2 + 1.0f;
 	const auto b     = s * _2R;
 	const auto c     = a + b;
 	const auto LP    = 1.0f / c;
 	const auto BPn   = (LP * s) * _2R;
-	const auto HP    = BPn * s;
+	const auto HP    = (LP * s) * s;
 	return {
 		.LP  = LP,
 		.BPn = BPn,
@@ -112,11 +113,11 @@ auto transfer_tilt2_to_BP(std::complex<float> t, float f, float F, float _2R, fl
 
 template <typename T> [[nodiscard]]
 auto make_coeffs(T f, T gain, T slope, T bw) -> band_shelf::coeffs<T> {
-	const auto slope_clamp    = clamp(slope, T(1), T(2));
+	const auto slope_mod      = std::pow(T(2), slope);
 	const auto M              = blink::math::convert::db_to_linear(gain / T(-2));
 	const auto Mpow2          = pow(M, T(2));
 	const auto recip_Mpow2    = reciprocal(Mpow2);
-	const auto Mpow2_biclip   = bi_clip(slope_clamp, T(2));
+	const auto Mpow2_biclip   = bi_clip(slope_mod, T(2));
 	const auto Mpow2_low      = Mpow2_biclip.first;
 	const auto Mpow2_high     = Mpow2_biclip.second;
 	const auto g2R_low        = g2R(Mpow2_low, Mpow2, recip_Mpow2);
@@ -132,7 +133,7 @@ auto make_coeffs(T f, T gain, T slope, T bw) -> band_shelf::coeffs<T> {
 	const auto a2div2         = a2 / T(2);
 	const auto _2R1           = a22R(a1 + a2div2) * R1x;
 	const auto _2R2           = a22R(a1 - a2div2);
-	const auto BWpow2         = pow(bw, T(2));
+	const auto BWpow2         = pow(T(2), bw);
 	const auto wMid           = sqrt(Mpow2);
 	const auto BW2R           = (BWpow2 - reciprocal(BWpow2)) * wMid;
 	return {
