@@ -81,6 +81,8 @@ constexpr auto BAND_CURVE_UUID = std::array<blink_UUID, BAND_COUNT>{
 
 enum struct curve_type {
 	band_shelf,
+	hi_shelf,
+	lo_shelf
 };
 
 struct band_spec {
@@ -388,6 +390,14 @@ auto frequency_response(const eq::fr_data& data, float x) -> float {
 	return blink::math::convert::linear_to_db(y) / MAGNITUDE_MAX;
 }
 
+[[nodiscard]]
+auto has_bandwidth(curve_type curve) -> bool {
+	switch (curve) {
+		case curve_type::band_shelf: { return true; }
+		default:                     { return false; }
+	}
+}
+
 } // ---------------------------------------------------------------------------------------------------------
 
 } // eq
@@ -492,6 +502,44 @@ auto blink_frequency_response(const void* fr_data, blink_FrameCount n, const flo
 	for (uint64_t i = 0; i < n.value; i++) {
 		out_y_01[i] = frequency_response(*data_ptr, in_x_01[i]);
 	}
+	return BLINK_OK;
+}
+
+auto blink_get_param_settings(const blink_UniformParamData* param_data, blink_ParamSettings* out_settings) -> blink_Error {
+	const auto audio_data = make_audio_data(model, param_data);
+	model.param_settings                       = {};
+	model.param_settings.fr_enabled            = model.params.option.band_on;
+	model.param_settings.fr_frequency          = model.params.slider.band_freq;
+	model.param_settings.fr_left_vertical      = model.params.slider.band_mag;
+	model.param_settings.fr_left_vertical_ctrl = model.params.slider.band_slope;
+	for (size_t i = 0; i < BAND_COUNT; i++) {
+		const auto curve = static_cast<curve_type>(audio_data.option.band_curve[i].value);
+		if (has_bandwidth(curve)) {
+			model.param_settings.visible_params.push_back(model.params.slider.band_bandwidth[i]);
+			model.param_settings.fr_right_horizontal[i] = model.params.slider.band_bandwidth[i];
+		}
+		else {
+			model.param_settings.fr_right_horizontal[i] = blink_ParamIdx{-1};
+		}
+		model.param_settings.visible_params.push_back(model.params.option.band_on[i]);
+		model.param_settings.visible_params.push_back(model.params.slider.band_freq[i]);
+		model.param_settings.visible_params.push_back(model.params.slider.band_mag[i]);
+		model.param_settings.visible_params.push_back(model.params.slider.band_slope[i]);
+	}
+	model.param_settings.fr_info.band_count               = 8;
+	model.param_settings.fr_info.extra_count              = 0;
+	model.param_settings.fr_info.extra                    = nullptr;
+	model.param_settings.fr_info.enabled                  = model.param_settings.fr_enabled.data();
+	model.param_settings.fr_info.frequency                = model.param_settings.fr_frequency.data();
+	model.param_settings.fr_info.mb_left_vertical         = model.param_settings.fr_left_vertical.data();
+	model.param_settings.fr_info.mb_right_horizontal      = model.param_settings.fr_right_horizontal.data();
+	model.param_settings.fr_info.mb_right_vertical        = model.param_settings.fr_right_vertical.data();
+	model.param_settings.fr_info.mb_left_horizontal_ctrl  = model.param_settings.fr_left_horizontal_ctrl.data();
+	model.param_settings.fr_info.mb_left_vertical_ctrl    = model.param_settings.fr_left_vertical_ctrl.data();
+	model.param_settings.fr_info.mb_right_horizontal_ctrl = model.param_settings.fr_right_horizontal_ctrl.data();
+	model.param_settings.fr_info.mb_right_vertical_ctrl   = model.param_settings.fr_right_vertical_ctrl.data();
+	out_settings->visible_params      = {model.param_settings.visible_params.data(), model.param_settings.visible_params.size()};
+	out_settings->frequency_responses = {&model.param_settings.fr_info, 1};
 	return BLINK_OK;
 }
 
