@@ -238,8 +238,8 @@ auto svf(band_shelf::state<T> state, T in, T wdiv2, T damp, T BW) -> std::tuple<
 	const auto HP           = svf_input_fbk({state.fbk, in});
 	const auto [BP, BP_fbk] = lp_to_bp_integrator(HP, state.integrator1_fbk, wdiv2, BW);
 	const auto [LP, LP_fbk] = lp_to_bp_integrator(BP, state.integrator2_fbk, wdiv2, BW);
-	const auto BPn = gain(BP, damp);
-	const auto fbk = LP.state + BPn.state;
+	const auto BPn          = gain(BP, damp);
+	const auto fbk          = LP.state + BPn.state;
 	state = {
 		.fbk             = LP.state + BPn.state,
 		.integrator1_fbk = BP_fbk,
@@ -403,13 +403,12 @@ auto make_coeffs(T f, T gain, T slope, float SR) -> hilo::coeffs<T> {
 }
 
 template <typename T> [[nodiscard]]
-auto process(hilo::state<T> state, T in, const band_shelf::coeffs<T>& coeffs) -> std::tuple<hilo::state<T>, T> {
+auto process(hilo::state<T> state, T in, const hilo::coeffs<T>& coeffs) -> std::tuple<hilo::state<T>, T> {
 	auto signal = in;
 	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt1);
 	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt2);
 	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt3);
 	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt4);
-	signal *= coeffs._recip_Mpow2;
 	return std::make_tuple(state, signal);
 }
 
@@ -446,22 +445,19 @@ auto compute(const hilo::coeffs<float>& coeffs, float f) -> std::complex<float> 
 
 namespace eq::filters::shelving::hi_shelf {
 
-template <typename T> using coeffs = hilo::coeffs<T>;
+template <typename T> struct coeffs : hilo::coeffs<T> {};
 template <typename T> using state  = hilo::state<T>;
 
 template <typename T> [[nodiscard]]
 auto make_coeffs(T f, T gain, T slope, float SR) -> coeffs<T> {
-	return hilo::make_coeffs(f, gain, slope, SR);
+	return static_cast<coeffs<T>>(hilo::make_coeffs(f, gain, slope, SR));
 }
 
 template <typename T> [[nodiscard]]
-auto process(hi_shelf::state<T> state, T in, const band_shelf::coeffs<T>& coeffs) -> std::tuple<hi_shelf::state<T>, T> {
+auto process(hi_shelf::state<T> state, T in, const hi_shelf::coeffs<T>& coeffs) -> std::tuple<hi_shelf::state<T>, T> {
 	auto signal = in;
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt1);
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt2);
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt3);
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt4);
-	signal *= coeffs._recip_Mpow2;
+	std::tie(state, signal) = hilo::process(state, signal, coeffs);
+	signal *= coeffs.Mpow2;
 	return std::make_tuple(state, signal);
 }
 
@@ -484,22 +480,19 @@ auto compute(const hi_shelf::coeffs<float>& coeffs, std::span<const float> in_om
 
 namespace eq::filters::shelving::lo_shelf {
 
-template <typename T> using coeffs = hilo::coeffs<T>;
+template <typename T> struct coeffs : hilo::coeffs<T> {};
 template <typename T> using state  = hilo::state<T>;
 
 template <typename T> [[nodiscard]]
 auto make_coeffs(T f, T gain, T slope, float SR) -> coeffs<T> {
-	return hilo::make_coeffs(f, gain, slope, SR);
+	return static_cast<coeffs<T>>(hilo::make_coeffs(f, gain, slope, SR));
 }
 
 template <typename T> [[nodiscard]]
-auto process(lo_shelf::state<T> state, T in, const band_shelf::coeffs<T>& coeffs) -> std::tuple<lo_shelf::state<T>, T> {
+auto process(lo_shelf::state<T> state, T in, const lo_shelf::coeffs<T>& coeffs) -> std::tuple<lo_shelf::state<T>, T> {
 	auto signal = in;
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt1);
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt2);
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt3);
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt4);
-	signal *= coeffs._recip_Mpow2;
+	std::tie(state, signal) = hilo::process(state, signal, coeffs);
+	signal *= coeffs.recip_Mpow2;
 	return std::make_tuple(state, signal);
 }
 

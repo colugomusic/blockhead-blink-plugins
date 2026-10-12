@@ -20,8 +20,9 @@ namespace { // -----------------------------------------------------------------
 
 Model model;
 
-constexpr auto PLUGIN_UUID = blink_UUID{"6fccd4a1-8da9-45c3-8174-8b5d7f8cf846"};
-constexpr auto BAND_COUNT  = 8;
+constexpr auto PLUGIN_UUID       = blink_UUID{"6fccd4a1-8da9-45c3-8174-8b5d7f8cf846"};
+constexpr auto MAGNITUDE_DEFAULT = 0.0f;
+constexpr auto MAGNITUDE_MAX     = 30.0f;
 
 constexpr auto BAND_ON_UUID = std::array<blink_UUID, BAND_COUNT>{
 	blink_UUID{"6ecdb955-1a41-4c44-83a9-5fe2b2c27bb4"},
@@ -89,7 +90,7 @@ struct band_spec {
 	std::string_view slope_param_name;
 	std::string_view bandwidth_param_name;
 	std::string_view curve_param_name;
-	bool enabled = false;
+	bool enabled    = false;
 	float frequency = 1000.0f;
 	float magnitude = 0.0f;
 	float slope     = 0.5f;
@@ -205,9 +206,6 @@ auto make_audio_data(const Model& model, const blink_UniformParamData* param_dat
 	}
 	return out;
 }
-
-constexpr auto MAGNITUDE_DEFAULT = 0.0f;
-constexpr auto MAGNITUDE_MAX     = 30.0f;
 
 auto magnitude_db_to_linear(float v) -> float                   { return v / MAGNITUDE_MAX; }
 auto linear_to_magnitude_db(float v) -> float                   { return v * MAGNITUDE_MAX; }
@@ -360,30 +358,38 @@ auto add_band_curve_params(const blink::Plugin& plugin) -> std::array<blink_Para
 }
 
 [[nodiscard]]
-auto frequency_response(const eq::audio_data& audio_data, float x) -> float {
-	// auto display_to_omega = [](float display_x) -> float {
-	// 	static const auto F_MAX   = blink::math::convert::linear_to_filter_hz(1.0f);
-	// 	return std::clamp(blink::math::convert::linear_to_filter_hz(display_x) / F_MAX, 0.0001f, 0.4999f);
-	// };
-	// const auto omega_x = display_to_omega(x);
-	const auto hz = blink::math::convert::linear_to_filter_hz(x);
+auto frequency_response(const std::monostate&, float) -> float {
+	return 1.0f;
+}
+
+[[nodiscard]]
+auto frequency_response(const filters::shelving::band_shelf::coeffs<float>& coeffs, float hz) -> float {
+	return filters::shelving::band_shelf::tf::compute(coeffs, hz);
+}
+
+[[nodiscard]]
+auto frequency_response(const filters::shelving::hi_shelf::coeffs<float>& coeffs, float hz) -> float {
+	return filters::shelving::hi_shelf::tf::compute(coeffs, hz);
+}
+
+[[nodiscard]]
+auto frequency_response(const filters::shelving::lo_shelf::coeffs<float>& coeffs, float hz) -> float {
+	return filters::shelving::lo_shelf::tf::compute(coeffs, hz);
+}
+
+[[nodiscard]]
+auto frequency_response(const eq::fr_data& data, float x) -> float {
+	const auto hz      = blink::math::convert::linear_to_filter_hz(x);
+	const auto visitor = [hz](const auto& coeffs) -> float { return frequency_response(coeffs, hz); };
 	auto y = float{1.0f};
 	for (size_t i = 0; i < BAND_COUNT; i++) {
-		if (audio_data.option.band_on[i].value > 0) {
-			const auto f         = blink::math::convert::linear_to_filter_hz(audio_data.slider.band_freq[i].value);
-			const auto gain      = linear_to_magnitude_db(audio_data.slider.band_mag[i].value);
-			const auto slope     = 3.0f;// audio_data.slider.band_slope[i].value;
-			const auto bw        = 3.0f;//audio_data.slider.band_bandwidth[i].value;
-			//const auto coeffs    = filters::shelving::make_coeffs<float>(f, gain, slope, bw);
-			//y *= filters::shelving::band_shelf::tf::compute(coeffs, hz);
-			const auto coeffs    = filters::shelving::hi_shelf::make_coeffs<float>(f, gain, slope, 44100.0f);
-			y *= filters::shelving::hi_shelf::tf::compute(coeffs, hz);
-		}
+		y *= std::visit(visitor, data.bands[i].coeffs);
 	}
 	return blink::math::convert::linear_to_db(y) / MAGNITUDE_MAX;
 }
 
 } // ---------------------------------------------------------------------------------------------------------
+
 } // eq
 
 auto blink_get_error_string(blink_Error error) -> blink_TempString {
@@ -467,10 +473,24 @@ auto blink_unit_stream_init(blink_UnitIdx unit_idx, blink_SR SR) -> blink_Error 
 	return BLINK_OK;
 }
 
-auto blink_frequency_response(const blink_UniformParamData* param_data, size_t, blink_FrameCount n, const float* in_x_01, float* out_y_01) -> blink_Error {
+auto blink_get_frequency_response_data(const blink_UniformParamData* param_data, size_t) -> const void* {
 	const auto audio_data = make_audio_data(model, param_data);
+	for (size_t i = 0; i < BAND_COUNT; i++) {
+		if (audio_data.option.band_on[i].value > 0) {
+			const auto f         = blink::math::convert::linear_to_filter_hz(audio_data.slider.band_freq[i].value);
+			const auto gain      = linear_to_magnitude_db(audio_data.slider.band_mag[i].value);
+			const auto slope     = 3.0f;// audio_data.slider.band_slope[i].value;
+			const auto bw        = 3.0f;//audio_data.slider.band_bandwidth[i].value;
+			model.fr_data.bands[i].coeffs = filters::shelving::hi_shelf::make_coeffs<float>(f, gain, slope, 44100.0f);
+		}
+	}
+	return &model.fr_data;
+}
+
+auto blink_frequency_response(const void* fr_data, blink_FrameCount n, const float* in_x_01, float* out_y_01) -> blink_Error {
+	const auto data_ptr = reinterpret_cast<const eq::fr_data*>(fr_data);
 	for (uint64_t i = 0; i < n.value; i++) {
-		out_y_01[i] = frequency_response(audio_data, in_x_01[i]);
+		out_y_01[i] = frequency_response(*data_ptr, in_x_01[i]);
 	}
 	return BLINK_OK;
 }
