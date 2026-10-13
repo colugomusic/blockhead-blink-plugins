@@ -58,7 +58,7 @@ struct param_settings {
 	std::array<blink_ParamIdx, BAND_COUNT> fr_left_vertical_ctrl    = NO_PARAMS<BAND_COUNT>;
 	std::array<blink_ParamIdx, BAND_COUNT> fr_right_horizontal_ctrl = NO_PARAMS<BAND_COUNT>;
 	std::array<blink_ParamIdx, BAND_COUNT> fr_right_vertical_ctrl   = NO_PARAMS<BAND_COUNT>;
-	std::vector<std::array<blink_ParamIdx, BAND_COUNT>> fr_extra;
+	std::array<std::vector<blink_ParamIdx>, BAND_COUNT> fr_extra;
 	blink_FrequencyResponseInfo fr_info = {0};
 };
 

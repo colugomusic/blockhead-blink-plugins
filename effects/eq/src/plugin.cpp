@@ -527,7 +527,6 @@ auto blink_get_param_settings(const blink_UniformParamData* param_data, blink_Pa
 		model.param_settings.visible_params.push_back(model.params.slider.band_slope[i]);
 	}
 	model.param_settings.fr_info.band_count               = 8;
-	model.param_settings.fr_info.extra_count              = 0;
 	model.param_settings.fr_info.extra                    = nullptr;
 	model.param_settings.fr_info.enabled                  = model.param_settings.fr_enabled.data();
 	model.param_settings.fr_info.frequency                = model.param_settings.fr_frequency.data();
