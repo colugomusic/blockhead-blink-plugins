@@ -132,7 +132,7 @@ struct zdf_signal {
 template <typename T> [[nodiscard]]
 auto make_coeffs(T f, T gain, T slope, T bw, float SR) -> coeffs<T> {
 	const auto slope_mod            = std::pow(T(2), slope);
-	const auto M                    = blink::math::convert::db_to_linear(gain / T(-2));
+	const auto M                    = blink::math::convert::db_to_linear(gain / T(-4));
 	const auto Mpow2                = pow(M, T(2));
 	const auto recip_Mpow2          = reciprocal(Mpow2);
 	const auto [slope_lo, slope_hi] = bi_clip(slope_mod, T(2));

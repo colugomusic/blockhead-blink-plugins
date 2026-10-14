@@ -134,7 +134,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.freq      = "Band 2 Frequency",
 			.gain      = "Band 2 Gain",
 			.slope     = "Band 2 Slope",
-			.bandwidth = "Band 1 Bandwidth",
+			.bandwidth = "Band 2 Bandwidth",
 			.curve     = "Band 2 Type"
 		},
 		.enabled   = false,
@@ -160,7 +160,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.freq      = "Band 4 Frequency",
 			.gain      = "Band 4 Gain",
 			.slope     = "Band 4 Slope",
-			.bandwidth = "Band 1 Bandwidth",
+			.bandwidth = "Band 4 Bandwidth",
 			.curve     = "Band 4 Type"
 		},
 		.enabled   = false,
@@ -282,7 +282,7 @@ auto add_gain_slider(const blink::Plugin& plugin, float default_value) -> blink_
 
 auto add_band_on_option_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::option(plugin, uuid);
-	const auto flags      = blink_ParamFlags_IsToggle | blink_ParamFlags_MovesDisplay;
+	const auto flags      = blink_ParamFlags_IsToggle | blink_ParamFlags_MovesDisplay | blink_ParamFlags_FrequencyResponseBandParam;
 	blink::write::param::name(plugin, param_idx, {spec.names.on.data()});
 	blink::write::param::short_name(plugin, param_idx, {spec.short_names.on.data()});
 	blink::write::param::option_default_value(plugin, param_idx, spec.enabled ? 1 : 0);
@@ -293,7 +293,7 @@ auto add_band_on_option_param(const blink::Plugin& plugin, blink_UUID uuid, cons
 auto add_band_freq_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
 	const auto slider_idx = blink::add::slider::filter_frequency(plugin.host, spec.frequency);
-	const auto flags      = blink_ParamFlags_MovesDisplay;
+	const auto flags      = blink_ParamFlags_MovesDisplay | blink_ParamFlags_FrequencyResponseBandParam;
 	blink::write::param::slider(plugin, param_idx, slider_idx);
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	blink::write::param::name(plugin, param_idx, {spec.names.freq.data()});
@@ -304,7 +304,7 @@ auto add_band_freq_slider_param(const blink::Plugin& plugin, blink_UUID uuid, co
 auto add_band_gain_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
     const auto slider_idx = add_gain_slider(plugin, spec.gain);
-	const auto flags      = blink_ParamFlags_MovesDisplay;
+	const auto flags      = blink_ParamFlags_MovesDisplay | blink_ParamFlags_FrequencyResponseBandParam;
     blink::write::param::slider(plugin, param_idx, slider_idx);
 	blink::write::param::name(plugin, param_idx, {spec.names.gain.data()});
 	blink::write::param::short_name(plugin, param_idx, {spec.short_names.gain.data()});
@@ -315,7 +315,7 @@ auto add_band_gain_slider_param(const blink::Plugin& plugin, blink_UUID uuid, co
 auto add_band_slope_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
 	const auto slider_idx = blink::add::slider::percentage(plugin.host);
-	const auto flags      = blink_ParamFlags_MovesDisplay;
+	const auto flags      = blink_ParamFlags_MovesDisplay | blink_ParamFlags_FrequencyResponseBandParam;
 	blink::write::slider::default_value(plugin, slider_idx, spec.slope);
 	blink::write::param::name(plugin, param_idx, {spec.names.slope.data()});
 	blink::write::param::short_name(plugin, param_idx, {spec.short_names.slope.data()});
@@ -326,7 +326,7 @@ auto add_band_slope_slider_param(const blink::Plugin& plugin, blink_UUID uuid, c
 auto add_band_bandwidth_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
 	const auto slider_idx = blink::add::slider::percentage(plugin.host);
-	const auto flags      = blink_ParamFlags_MovesDisplay;
+	const auto flags      = blink_ParamFlags_MovesDisplay | blink_ParamFlags_FrequencyResponseBandParam;
 	blink::write::slider::default_value(plugin, slider_idx, spec.bandwidth);
 	blink::write::param::name(plugin, param_idx, {spec.names.bandwidth.data()});
 	blink::write::param::short_name(plugin, param_idx, {spec.short_names.bandwidth.data()});
@@ -336,7 +336,7 @@ auto add_band_bandwidth_slider_param(const blink::Plugin& plugin, blink_UUID uui
 
 auto add_band_curve_option_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx = blink::add::param::option(plugin, uuid);
-	const auto flags     = blink_ParamFlags_MovesDisplay;
+	const auto flags     = blink_ParamFlags_MovesDisplay | blink_ParamFlags_UpdateParamSettings | blink_ParamFlags_FrequencyResponseBandParam;
 	blink::write::param::name(plugin, param_idx, {spec.names.curve.data()});
 	blink::write::param::short_name(plugin, param_idx, {spec.short_names.curve.data()});
 	blink::write::param::add_flags(plugin, param_idx, flags);
@@ -515,9 +515,14 @@ auto blink_get_frequency_response_data(const blink_UniformParamData* param_data,
 		if (audio_data.option.band_on[i].value > 0) {
 			const auto f         = blink::math::convert::linear_to_filter_hz(audio_data.slider.band_freq[i].value);
 			const auto gain      = linear_to_gain_db(audio_data.slider.band_gain[i].value);
-			const auto slope     = 3.0f;// audio_data.slider.band_slope[i].value;
+			const auto slope     = 2.0f;// audio_data.slider.band_slope[i].value;
 			const auto bw        = 3.0f;//audio_data.slider.band_bandwidth[i].value;
-			model.fr_data.bands[i].coeffs = filters::shelving::hi_shelf::make_coeffs<float>(f, gain, slope, 44100.0f);
+			const auto type      = static_cast<curve_type>(audio_data.option.band_curve[i].value);
+			switch (type) {
+				case curve_type::band_shelf: { model.fr_data.bands[i].coeffs = filters::shelving::band_shelf::make_coeffs<float>(f, gain, slope, bw, 44100.0f); break; }
+				case curve_type::hi_shelf:   { model.fr_data.bands[i].coeffs = filters::shelving::hi_shelf::make_coeffs<float>(f, gain, slope, 44100.0f); break; }
+				case curve_type::lo_shelf:   { model.fr_data.bands[i].coeffs = filters::shelving::lo_shelf::make_coeffs<float>(f, gain, slope, 44100.0f); break; }
+			}
 		}
 	}
 	return &model.fr_data;

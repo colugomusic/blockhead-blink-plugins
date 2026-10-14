@@ -44,8 +44,15 @@ struct fr_data {
 	std::array<fr_band_data, BAND_COUNT> bands;
 };
 
+template <size_t N> constexpr
+auto make_no_params() -> std::array<blink_ParamIdx, N> {
+	std::array<blink_ParamIdx, N> arr{};
+	arr.fill(blink_ParamIdx{-1});
+	return arr;
+}
+
 template <size_t N>
-constexpr auto NO_PARAMS = std::array<blink_ParamIdx, N>{blink_ParamIdx{-1}};
+constexpr auto NO_PARAMS = make_no_params<N>();
 
 struct param_settings {
 	std::vector<blink_ParamIdx> visible_params;
