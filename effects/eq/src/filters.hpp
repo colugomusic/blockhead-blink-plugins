@@ -10,6 +10,8 @@
 
 namespace eq::filters {
 
+constexpr auto GAIN_MAX = 30.0f;
+
 auto acos(float v) -> float         { return std::acos(v); }
 auto cos(float v) -> float          { return std::cos(v); }
 auto pow(float v, float n) -> float { return std::pow(v, n); }
@@ -27,6 +29,9 @@ auto bi_clip(T v, T max) -> std::pair<T,T> {
 	if (v > max)  { return {max, v}; }
 	else          { return {v, max}; }
 }
+
+auto gain_db_to_linear(float v) -> float { return v / GAIN_MAX; }
+auto linear_to_gain_db(float v) -> float { return v * GAIN_MAX; }
 
 } // eq::filters
 
@@ -130,9 +135,10 @@ struct zdf_signal {
 };
 
 template <typename T> [[nodiscard]]
-auto make_coeffs(T f, T gain, T slope, T bw, float SR) -> coeffs<T> {
+auto make_coeffs(T f, T gain01, T slope, T bw, float SR) -> coeffs<T> {
+	const auto gain_db              = linear_to_gain_db(gain01);
 	const auto slope_mod            = std::pow(T(2), slope);
-	const auto M                    = blink::math::convert::db_to_linear(gain / T(-4));
+	const auto M                    = blink::math::convert::db_to_linear(gain_db / T(-4));
 	const auto Mpow2                = pow(M, T(2));
 	const auto recip_Mpow2          = reciprocal(Mpow2);
 	const auto [slope_lo, slope_hi] = bi_clip(slope_mod, T(2));
@@ -331,9 +337,9 @@ template <typename T> struct coeffs {
 template <typename T> struct state {};
 
 template <typename T> [[nodiscard]]
-auto make_coeffs(T f, T gain, T slope, float SR) -> hilo::coeffs<T> {
+auto make_coeffs(T f, T gain_db, T slope, float SR) -> hilo::coeffs<T> {
 	const auto slope_mod              = std::pow(T(2), slope);
-	const auto M                      = blink::math::convert::db_to_linear(gain / T(-2));
+	const auto M                      = blink::math::convert::db_to_linear(gain_db / T(-2));
 	const auto Mpow2                  = pow(M, T(2));
 	const auto recip_Mpow2            = reciprocal(Mpow2);
 	const auto [slope1_lo, slope1_hi] = bi_clip(slope_mod, T(2));
@@ -449,8 +455,8 @@ template <typename T> struct coeffs : hilo::coeffs<T> {};
 template <typename T> using state  = hilo::state<T>;
 
 template <typename T> [[nodiscard]]
-auto make_coeffs(T f, T gain, T slope, float SR) -> coeffs<T> {
-	return static_cast<coeffs<T>>(hilo::make_coeffs(f, gain, slope, SR));
+auto make_coeffs(T f, T gain01, T slope, float SR) -> coeffs<T> {
+	return static_cast<coeffs<T>>(hilo::make_coeffs(f, linear_to_gain_db(-gain01), slope, SR));
 }
 
 template <typename T> [[nodiscard]]
@@ -484,8 +490,8 @@ template <typename T> struct coeffs : hilo::coeffs<T> {};
 template <typename T> using state  = hilo::state<T>;
 
 template <typename T> [[nodiscard]]
-auto make_coeffs(T f, T gain, T slope, float SR) -> coeffs<T> {
-	return static_cast<coeffs<T>>(hilo::make_coeffs(f, gain, slope, SR));
+auto make_coeffs(T f, T gain01, T slope, float SR) -> coeffs<T> {
+	return static_cast<coeffs<T>>(hilo::make_coeffs(f, linear_to_gain_db(gain01), slope, SR));
 }
 
 template <typename T> [[nodiscard]]
