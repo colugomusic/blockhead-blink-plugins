@@ -463,7 +463,7 @@ auto blink_get_plugin_info() -> blink_PluginInfo {
 	out.name     = {"EQ"};
 	out.category = {BLINK_STD_CATEGORY_FILTERS};
 	out.version  = {PLUGIN_VERSION};
-	out.has_icon = {true};
+	out.has_icon = {false};
 	return out;
 }
 
@@ -547,40 +547,58 @@ auto blink_frequency_response(const void* fr_data, blink_FrameCount n, const flo
 	return BLINK_OK;
 }
 
+[[nodiscard]]
+auto to_c(const std::span<const blink_ParamIdx> v) -> blink_ParamIdxArray {
+	return {
+		.data = v.data(),
+		.size = v.size(),
+	};
+}
+
+[[nodiscard]]
+auto to_c(const fr_info& v) -> blink_FrequencyResponseInfo {
+	auto out                     = blink_FrequencyResponseInfo{};
+	out.band_count               = BAND_COUNT;
+	out.extra                    = v.extra_params_c.data();
+	out.enabled                  = v.enabled.data();
+	out.frequency                = v.frequency.data();
+	out.mb_left_vertical         = v.mb_left_vertical.data();
+	out.mb_right_horizontal      = v.mb_right_horizontal.data();
+	out.mb_right_vertical        = v.mb_right_vertical.data();
+	out.mb_left_horizontal_ctrl  = v.mb_left_horizontal_ctrl.data();
+	out.mb_left_vertical_ctrl    = v.mb_left_vertical_ctrl.data();
+	out.mb_right_horizontal_ctrl = v.mb_right_horizontal_ctrl.data();
+	out.mb_right_vertical_ctrl   = v.mb_right_vertical_ctrl.data();
+    return out;
+}
+
 auto blink_get_param_settings(const blink_UniformParamData* param_data, blink_ParamSettings* out_settings) -> blink_Error {
 	const auto audio_data = make_audio_data(model, param_data);
-	model.param_settings                       = {};
-	model.param_settings.fr_enabled            = model.params.option.band_on;
-	model.param_settings.fr_frequency          = model.params.slider.band_freq;
-	model.param_settings.fr_left_vertical      = model.params.slider.band_gain;
-	model.param_settings.fr_left_vertical_ctrl = model.params.slider.band_slope;
+	model.param_settings   = {};
+	model.param_settings_c = {};
+	model.param_settings.fr_info.enabled               = model.params.option.band_on;
+	model.param_settings.fr_info.frequency             = model.params.slider.band_freq;
+	model.param_settings.fr_info.mb_left_vertical      = model.params.slider.band_gain;
+	model.param_settings.fr_info.mb_left_vertical_ctrl = model.params.slider.band_slope;
 	for (size_t i = 0; i < BAND_COUNT; i++) {
 		const auto curve = static_cast<curve_type>(audio_data.option.band_curve[i].value);
 		if (has_bandwidth(curve)) {
 			model.param_settings.visible_params.push_back(model.params.slider.band_bandwidth[i]);
-			model.param_settings.fr_right_vertical[i] = model.params.slider.band_bandwidth[i];
+			model.param_settings.fr_info.mb_right_vertical[i] = model.params.slider.band_bandwidth[i];
 		}
 		else {
-			model.param_settings.fr_right_vertical[i] = blink_ParamIdx{-1};
+			model.param_settings.fr_info.mb_right_vertical[i] = blink_ParamIdx{-1};
 		}
+		model.param_settings.fr_info.extra_params[i].push_back(model.params.option.band_curve[i]);
 		model.param_settings.visible_params.push_back(model.params.option.band_on[i]);
 		model.param_settings.visible_params.push_back(model.params.slider.band_freq[i]);
 		model.param_settings.visible_params.push_back(model.params.slider.band_gain[i]);
 		model.param_settings.visible_params.push_back(model.params.slider.band_slope[i]);
+		model.param_settings.fr_info.extra_params_c[i] = to_c(model.param_settings.fr_info.extra_params[i]);
 	}
-	model.param_settings.fr_info.band_count               = 8;
-	model.param_settings.fr_info.extra                    = nullptr;
-	model.param_settings.fr_info.enabled                  = model.param_settings.fr_enabled.data();
-	model.param_settings.fr_info.frequency                = model.param_settings.fr_frequency.data();
-	model.param_settings.fr_info.mb_left_vertical         = model.param_settings.fr_left_vertical.data();
-	model.param_settings.fr_info.mb_right_horizontal      = model.param_settings.fr_right_horizontal.data();
-	model.param_settings.fr_info.mb_right_vertical        = model.param_settings.fr_right_vertical.data();
-	model.param_settings.fr_info.mb_left_horizontal_ctrl  = model.param_settings.fr_left_horizontal_ctrl.data();
-	model.param_settings.fr_info.mb_left_vertical_ctrl    = model.param_settings.fr_left_vertical_ctrl.data();
-	model.param_settings.fr_info.mb_right_horizontal_ctrl = model.param_settings.fr_right_horizontal_ctrl.data();
-	model.param_settings.fr_info.mb_right_vertical_ctrl   = model.param_settings.fr_right_vertical_ctrl.data();
+	model.param_settings_c.fr_info    = to_c(model.param_settings.fr_info);
 	out_settings->visible_params      = {model.param_settings.visible_params.data(), model.param_settings.visible_params.size()};
-	out_settings->frequency_responses = {&model.param_settings.fr_info, 1};
+	out_settings->frequency_responses = {&model.param_settings_c.fr_info, 1};
 	return BLINK_OK;
 }
 
