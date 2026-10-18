@@ -134,9 +134,10 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 1 Bandwidth",
 			.curve     = "Band 1 Type"
 		},
-		.enabled   = false,
-		.frequency = blink::math::convert::filter_hz_to_linear(100.0f),
-		.gain      = 0.9f,
+		.enabled   = true,
+		.frequency = blink::math::convert::filter_hz_to_linear(50.0f),
+		.gain      = 0.0f,
+		.curve     = curve_type::lo_shelf,
 	},
 	band_spec{
 		.names = {
@@ -148,8 +149,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.curve     = "Band 2 Type"
 		},
 		.enabled   = false,
-		.frequency = blink::math::convert::filter_hz_to_linear(400.0f),
-		.gain      = 0.9f,
+		.frequency = blink::math::convert::filter_hz_to_linear(100.0f),
 	},
 	band_spec{
 		.names = {
@@ -160,10 +160,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 3 Bandwidth",
 			.curve     = "Band 3 Type"
 		},
-		.enabled   = true,
-		.frequency = blink::math::convert::filter_hz_to_linear(600.0f),
-		.gain      = 0.2f,
-		.curve     = curve_type::hi_shelf
+		.frequency = blink::math::convert::filter_hz_to_linear(200.0f),
 	},
 	band_spec{
 		.names = {
@@ -174,9 +171,9 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 4 Bandwidth",
 			.curve     = "Band 4 Type"
 		},
-		.enabled   = false,
-		.frequency = blink::math::convert::filter_hz_to_linear(1000.0f),
-		.gain      = -0.9f,
+		.enabled   = true,
+		.frequency = blink::math::convert::filter_hz_to_linear(400.0f),
+		.curve     = curve_type::band_shelf,
 	},
 	band_spec{
 		.names = {
@@ -187,9 +184,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 5 Bandwidth",
 			.curve     = "Band 5 Type"
 		},
-		.enabled   = false,
-		.frequency = blink::math::convert::filter_hz_to_linear(2000.0f),
-		.gain      = -0.5f,
+		.frequency = blink::math::convert::filter_hz_to_linear(600.0f),
 	},
 	band_spec{
 		.names = {
@@ -200,6 +195,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 6 Bandwidth",
 			.curve     = "Band 6 Type"
 		},
+		.frequency = blink::math::convert::filter_hz_to_linear(1000.0f),
 	},
 	band_spec{
 		.names = {
@@ -210,6 +206,9 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 7 Bandwidth",
 			.curve     = "Band 7 Type"
 		},
+		.enabled   = true,
+		.frequency = blink::math::convert::filter_hz_to_linear(2000.0f),
+		.curve     = curve_type::hi_shelf
 	},
 	band_spec{
 		.names = {
@@ -220,6 +219,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 8 Bandwidth",
 			.curve     = "Band 8 Type"
 		},
+		.frequency = blink::math::convert::filter_hz_to_linear(4000.0f),
 	},
 };
 
@@ -535,6 +535,9 @@ auto blink_get_frequency_response_data(const blink_UniformParamData* param_data,
 				case curve_type::lo_shelf:   { model.fr_data.bands[i].coeffs = filters::shelving::lo_shelf::make_coeffs<float>(f, gain, slope, 44100.0f); break; }
 			}
 		}
+		else {
+			model.fr_data.bands[i].coeffs = {};
+		}
 	}
 	return &model.fr_data;
 }
@@ -563,12 +566,8 @@ auto to_c(const fr_info& v) -> blink_FrequencyResponseInfo {
 	out.enabled                  = v.enabled.data();
 	out.frequency                = v.frequency.data();
 	out.mb_left_vertical         = v.mb_left_vertical.data();
-	out.mb_right_horizontal      = v.mb_right_horizontal.data();
-	out.mb_right_vertical        = v.mb_right_vertical.data();
 	out.mb_left_horizontal_ctrl  = v.mb_left_horizontal_ctrl.data();
 	out.mb_left_vertical_ctrl    = v.mb_left_vertical_ctrl.data();
-	out.mb_right_horizontal_ctrl = v.mb_right_horizontal_ctrl.data();
-	out.mb_right_vertical_ctrl   = v.mb_right_vertical_ctrl.data();
     return out;
 }
 
@@ -584,10 +583,7 @@ auto blink_get_param_settings(const blink_UniformParamData* param_data, blink_Pa
 		const auto curve = static_cast<curve_type>(audio_data.option.band_curve[i].value);
 		if (has_bandwidth(curve)) {
 			model.param_settings.visible_params.push_back(model.params.slider.band_bandwidth[i]);
-			model.param_settings.fr_info.mb_right_vertical[i] = model.params.slider.band_bandwidth[i];
-		}
-		else {
-			model.param_settings.fr_info.mb_right_vertical[i] = blink_ParamIdx{-1};
+			model.param_settings.fr_info.extra_params[i].push_back(model.params.slider.band_bandwidth[i]);
 		}
 		model.param_settings.fr_info.extra_params[i].push_back(model.params.option.band_curve[i]);
 		model.param_settings.visible_params.push_back(model.params.option.band_on[i]);

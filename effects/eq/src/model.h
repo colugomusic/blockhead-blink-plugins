@@ -61,11 +61,8 @@ struct fr_info {
 	std::array<blink_ParamIdx, BAND_COUNT> frequency                = NO_PARAMS<BAND_COUNT>;
 	std::array<blink_ParamIdx, BAND_COUNT> mb_left_vertical         = NO_PARAMS<BAND_COUNT>;
 	std::array<blink_ParamIdx, BAND_COUNT> mb_right_horizontal      = NO_PARAMS<BAND_COUNT>;
-	std::array<blink_ParamIdx, BAND_COUNT> mb_right_vertical        = NO_PARAMS<BAND_COUNT>;
 	std::array<blink_ParamIdx, BAND_COUNT> mb_left_horizontal_ctrl  = NO_PARAMS<BAND_COUNT>;
 	std::array<blink_ParamIdx, BAND_COUNT> mb_left_vertical_ctrl    = NO_PARAMS<BAND_COUNT>;
-	std::array<blink_ParamIdx, BAND_COUNT> mb_right_horizontal_ctrl = NO_PARAMS<BAND_COUNT>;
-	std::array<blink_ParamIdx, BAND_COUNT> mb_right_vertical_ctrl   = NO_PARAMS<BAND_COUNT>;
 };
 
 struct param_settings {
