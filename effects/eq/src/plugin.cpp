@@ -120,7 +120,7 @@ struct band_spec {
 	float frequency = 1000.0f;
 	float gain      = 0.0f;
 	float slope     = 0.5f;
-	float bandwidth = 0.5f;
+	float bandwidth = 0.25f;
 	curve_type curve = curve_type::band_shelf;
 };
 
@@ -560,14 +560,14 @@ auto to_c(const std::span<const blink_ParamIdx> v) -> blink_ParamIdxArray {
 
 [[nodiscard]]
 auto to_c(const fr_info& v) -> blink_FrequencyResponseInfo {
-	auto out                     = blink_FrequencyResponseInfo{};
-	out.band_count               = BAND_COUNT;
-	out.extra                    = v.extra_params_c.data();
-	out.enabled                  = v.enabled.data();
-	out.frequency                = v.frequency.data();
-	out.mb_left_vertical         = v.mb_left_vertical.data();
-	out.mb_left_horizontal_ctrl  = v.mb_left_horizontal_ctrl.data();
-	out.mb_left_vertical_ctrl    = v.mb_left_vertical_ctrl.data();
+	auto out                    = blink_FrequencyResponseInfo{};
+	out.band_count              = BAND_COUNT;
+	out.extra                   = v.extra_params_c.data();
+	out.enabled                 = v.enabled.data();
+	out.frequency               = v.frequency.data();
+	out.mb_left_vertical        = v.mb_left_vertical.data();
+	out.mb_left_horizontal_ctrl = v.mb_left_horizontal_ctrl.data();
+	out.mb_left_vertical_ctrl   = v.mb_left_vertical_ctrl.data();
     return out;
 }
 
