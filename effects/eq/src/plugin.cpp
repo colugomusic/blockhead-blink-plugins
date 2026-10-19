@@ -4,6 +4,7 @@
 #	define _USE_MATH_DEFINES
 #endif
 
+#include "curve-type.hpp"
 #include "dsp.hpp"
 #include "filters.hpp"
 #include "model.h"
@@ -89,12 +90,6 @@ constexpr auto BAND_CURVE_UUID = std::array<blink_UUID, BAND_COUNT>{
 	blink_UUID{"afe67063-4f7b-4570-a42b-cc8b18ec6243"},
 };
 
-enum struct curve_type {
-	band_shelf,
-	hi_shelf,
-	lo_shelf
-};
-
 struct band_param_names {
 	std::string_view on;
 	std::string_view freq;
@@ -171,7 +166,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 4 Bandwidth",
 			.curve     = "Band 4 Type"
 		},
-		.enabled   = true,
+		.enabled   = false,
 		.frequency = blink::math::convert::filter_hz_to_linear(400.0f),
 		.curve     = curve_type::band_shelf,
 	},
@@ -206,7 +201,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 7 Bandwidth",
 			.curve     = "Band 7 Type"
 		},
-		.enabled   = true,
+		.enabled   = false,
 		.frequency = blink::math::convert::filter_hz_to_linear(2000.0f),
 		.curve     = curve_type::hi_shelf
 	},
@@ -412,17 +407,17 @@ auto frequency_response(const std::monostate&, float) -> float {
 }
 
 [[nodiscard]]
-auto frequency_response(const filters::shelving::band_shelf::coeffs<float>& coeffs, float hz) -> float {
+auto frequency_response(const filters::shelving::band_shelf::coeffs& coeffs, float hz) -> float {
 	return filters::shelving::band_shelf::tf::compute(coeffs, hz);
 }
 
 [[nodiscard]]
-auto frequency_response(const filters::shelving::hi_shelf::coeffs<float>& coeffs, float hz) -> float {
+auto frequency_response(const filters::shelving::hi_shelf::coeffs& coeffs, float hz) -> float {
 	return filters::shelving::hi_shelf::tf::compute(coeffs, hz);
 }
 
 [[nodiscard]]
-auto frequency_response(const filters::shelving::lo_shelf::coeffs<float>& coeffs, float hz) -> float {
+auto frequency_response(const filters::shelving::lo_shelf::coeffs& coeffs, float hz) -> float {
 	return filters::shelving::lo_shelf::tf::compute(coeffs, hz);
 }
 
@@ -530,9 +525,9 @@ auto blink_get_frequency_response_data(const blink_UniformParamData* param_data,
 			const auto bw    = std::lerp(0.2f, 4.0f, audio_data.slider.band_bandwidth[i].value);
 			const auto type  = static_cast<curve_type>(audio_data.option.band_curve[i].value);
 			switch (type) {
-				case curve_type::band_shelf: { model.fr_data.bands[i].coeffs = filters::shelving::band_shelf::make_coeffs<float>(f, gain, slope, bw, 44100.0f); break; }
-				case curve_type::hi_shelf:   { model.fr_data.bands[i].coeffs = filters::shelving::hi_shelf::make_coeffs<float>(f, gain, slope, 44100.0f); break; }
-				case curve_type::lo_shelf:   { model.fr_data.bands[i].coeffs = filters::shelving::lo_shelf::make_coeffs<float>(f, gain, slope, 44100.0f); break; }
+				case curve_type::band_shelf: { model.fr_data.bands[i].coeffs = filters::shelving::band_shelf::make_coeffs(f, gain, slope, bw, 44100.0f); break; }
+				case curve_type::hi_shelf:   { model.fr_data.bands[i].coeffs = filters::shelving::hi_shelf::make_coeffs(f, gain, slope, 44100.0f); break; }
+				case curve_type::lo_shelf:   { model.fr_data.bands[i].coeffs = filters::shelving::lo_shelf::make_coeffs(f, gain, slope, 44100.0f); break; }
 			}
 		}
 		else {

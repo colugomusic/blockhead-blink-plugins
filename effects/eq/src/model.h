@@ -6,24 +6,36 @@
 
 namespace eq {
 
-static inline constexpr auto BAND_COUNT = 8;
+static inline constexpr auto BAND_COUNT    = 8;
+static inline constexpr auto CHANNEL_COUNT = 2;
 
 struct Params {
 	struct {
-		std::array<blink_ParamIdx, 8> band_on;
-		std::array<blink_ParamIdx, 8> band_curve;
+		std::array<blink_ParamIdx, BAND_COUNT> band_on;
+		std::array<blink_ParamIdx, BAND_COUNT> band_curve;
 	} option;
 	struct {
-		std::array<blink_ParamIdx, 8> band_freq;
-		std::array<blink_ParamIdx, 8> band_gain;
-		std::array<blink_ParamIdx, 8> band_slope;
-		std::array<blink_ParamIdx, 8> band_bandwidth;
+		std::array<blink_ParamIdx, BAND_COUNT> band_freq;
+		std::array<blink_ParamIdx, BAND_COUNT> band_gain;
+		std::array<blink_ParamIdx, BAND_COUNT> band_slope;
+		std::array<blink_ParamIdx, BAND_COUNT> band_bandwidth;
 	} slider;
+};
+
+struct band_dsp {
+	filters::shelving::band_shelf::state band_shelf;
+	filters::shelving::hi_shelf::state hi_shelf;
+	filters::shelving::lo_shelf::state lo_shelf;
+};
+
+struct channel_dsp {
+	std::array<eq::band_dsp, BAND_COUNT> bands;
 };
 
 struct UnitDSP {
 	blink_SR SR;
 	blink::BlockPositions block_positions;
+	std::array<channel_dsp, CHANNEL_COUNT> channels;
 };
 
 using Instance = blink::Instance<>;
@@ -31,9 +43,9 @@ using Unit     = blink::Unit<UnitDSP>;
 
 using fr_filter_coeffs_var = std::variant<
 	std::monostate,
-	filters::shelving::band_shelf::coeffs<float>,
-	filters::shelving::hi_shelf::coeffs<float>,
-	filters::shelving::lo_shelf::coeffs<float>
+	filters::shelving::band_shelf::coeffs,
+	filters::shelving::hi_shelf::coeffs,
+	filters::shelving::lo_shelf::coeffs
 >;
 
 struct fr_band_data {

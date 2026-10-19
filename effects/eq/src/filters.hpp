@@ -3,35 +3,27 @@
 #include "blink/math.hpp"
 #include <cassert>
 #include <complex>
-#include <DSP/MLDSPOps.h>
 #include <span>
-#include <algorithm>
 #include <numbers>
+#include <snd/misc.hpp>
 
 namespace eq::filters {
 
 constexpr auto GAIN_MAX = 30.0f;
 
-auto acos(float v) -> float         { return std::acos(v); }
-auto cos(float v) -> float          { return std::cos(v); }
-auto pow(float v, float n) -> float { return std::pow(v, n); }
-auto sqrt(float v) -> float         { return std::sqrt(v); }
-auto min(float a, float b) -> float { return std::min(a, b); }
-auto max(float a, float b) -> float { return std::max(a, b); }
-
-template <typename T> [[nodiscard]]
-auto reciprocal(T v) -> T {
-	return T(1) / v;
+[[nodiscard]]
+auto reciprocal(float v) -> float {
+	return 1.0f / v;
 }
 
-template <typename T> [[nodiscard]]
-auto bi_clip(T v, T max) -> std::pair<T,T> {
-	if (v > max)  { return {max, v}; }
-	else          { return {v, max}; }
+[[nodiscard]]
+auto bi_clip(float v, float max) -> std::pair<float,float> {
+	if (v > max) { return {max, v}; }
+	else         { return {v, max}; }
 }
 
-auto gain_db_to_linear(float v) -> float { return v / GAIN_MAX; }
-auto linear_to_gain_db(float v) -> float { return v * GAIN_MAX; }
+[[nodiscard]] auto gain_db_to_linear(float v) { return v / GAIN_MAX; }
+[[nodiscard]] auto linear_to_gain_db(float v) { return v * GAIN_MAX; }
 
 } // eq::filters
 
@@ -43,41 +35,90 @@ struct svf_result {
 	std::complex<float> HP;
 };
 
-template <typename T> [[nodiscard]]
-auto g2R(T g, T M) -> T {
-	const auto a = ((T(2) - g) / g) * M;
-	return sqrt(a + T(2)) / T(2);
+struct zdf_signal {
+	std::complex<float> state;
+	float signal;
+};
+
+struct integrator_state {
+	float fbk = 0.4f;
+};
+
+[[nodiscard]]
+auto g2R(float g, float M) -> float {
+	const auto a = ((2.0f - g) / g) * M;
+	return sqrt(a + 2.0f) / 2.0f;
 }
 
-template <typename T> [[nodiscard]]
-auto R2p1(T _2R, T M) -> T {
-	const auto a = max(T(1), _2R);
-	const auto b = sqrt(pow(a, T(2)) - T(1));
+[[nodiscard]]
+auto R2p1(float _2R, float M) -> float {
+	const auto a = std::max(1.0f, _2R);
+	const auto b = std::sqrt(std::pow(a, 2.0f) - 1.0f);
 	const auto c = a + b;
-	if (M >= T(1)) { return c; }
+	if (M >= 1.0f) { return c; }
 	else           { return reciprocal(c); }
 }
 
-template <typename T> [[nodiscard]]
-auto a22R(T v) -> T {
-	return cos(v) * T(2);
+[[nodiscard]]
+auto a22R(float v) -> float {
+	return cos(v) * 2.0f;
 }
 
-template <class T> [[nodiscard]]
-auto approx_tan_rational(T v) -> T {
-	auto a = (v * T(-0.0896638)) + T(0.0388452);
-	auto b = (v * T(-0.430871)) + T(0.0404318);
-	auto c = (a * v) + T(1.00005);
-	auto d = (b * v) + T(1);
+[[nodiscard]]
+auto approx_tan_rational(float v) -> float {
+	auto a = (v * -0.0896638f) + 0.0388452f;
+	auto b = (v * -0.430871f) + 0.0404318f;
+	auto c = (a * v) + 1.00005f;
+	auto d = (b * v) + 1.0f;
 	return (c * v) / d;
 }
 
-template <typename T> [[nodiscard]]
-auto compute_wdiv2(T f, float SR) -> T {
-	f = max(f, T(0.01));
+[[nodiscard]]
+auto compute_wdiv2(float f, float SR) -> float {
+	f = std::max(f, 0.01f);
 	f *= std::numbers::pi_v<float> / SR;
-	f = min(f, T(1.50845));
+	f = std::min(f, 1.50845f);
 	return approx_tan_rational(f);
+}
+
+[[nodiscard]]
+auto integrator(integrator_state state, zdf_signal zdf, float wdiv2) -> std::tuple<integrator_state, zdf_signal> {
+	const auto a = zdf.signal * wdiv2;
+	const auto r = wdiv2 * zdf.state.real();
+	const auto i = state.fbk + (zdf.state.imag() * wdiv2);
+	const auto out = a + state.fbk;
+	state.fbk = a + out;
+	snd::flush_denormal_to_zero(state.fbk);
+	zdf = {
+		.state = {r, i},
+		.signal = out,
+	};
+	return std::make_tuple(state, zdf);
+}
+
+[[nodiscard]]
+auto svf_input_fbk_solve(float x, std::complex<float> zdf) -> std::tuple<float, float> {
+	const auto a = x * zdf.real();
+	const auto b = a + zdf.imag();
+	const auto c = 1.0f - zdf.real();
+	const auto d = 1.0f / c;
+	return std::make_tuple(b * d, d);
+}
+
+[[nodiscard]]
+auto svf_input_fbk(zdf_signal in) -> zdf_signal {
+	const auto [y, _] = svf_input_fbk_solve(in.signal, in.state * -1.0f);
+	return {
+		.state  = {1.0f, 0.0f},
+		.signal = in.signal + y
+	};
+}
+
+[[nodiscard]]
+auto gain(zdf_signal zdf, float v) -> zdf_signal {
+	zdf.signal *= v;
+	zdf.state  *= v;
+	return zdf;
 }
 
 } // eq::shelving
@@ -104,62 +145,70 @@ auto svf(std::complex<float> s, float _2R) -> svf_result {
 
 namespace eq::filters::shelving::band_shelf {
 
-template <typename T>
+struct lp_to_bp_state {
+	integrator_state integrator1;
+	integrator_state integrator2;
+	std::complex<float> fbk;
+};
+
+struct svf_state {
+	lp_to_bp_state lp_to_bp_1;
+	lp_to_bp_state lp_to_bp_2;
+	std::complex<float> fbk;
+};
+
+struct tilt_state {
+	svf_state svf;
+};
+
 struct state {
-	std::complex<T> fbk;
-	std::complex<T> integrator1_fbk;
-	std::complex<T> integrator2_fbk;
+	state() = default;
+	tilt_state tilt1;
+	tilt_state tilt2;
 };
 
-template <typename T>
 struct tilt_coeffs {
-	T damp;
-	T M;
-	T recip_M;
-	T BW;
-	T wMid;
+	float damp;
+	float M;
+	float recip_M;
+	float BW;
+	float wMid;
 };
 
-template <typename T> struct coeffs {
-	T F;
-	T recip_Mpow2;
-	T wdiv2;
-	tilt_coeffs<T> tilt1;
-	tilt_coeffs<T> tilt2;
+struct coeffs {
+	float F;
+	float recip_Mpow2;
+	float wdiv2;
+	tilt_coeffs tilt1;
+	tilt_coeffs tilt2;
 };
 
-template <typename T>
-struct zdf_signal {
-	std::complex<T> state;
-	T signal;
-};
-
-template <typename T> [[nodiscard]]
-auto make_coeffs(T f, T gain01, T slope, T bw, float SR) -> coeffs<T> {
+[[nodiscard]]
+auto make_coeffs(float f, float gain01, float slope, float bw, float SR) -> coeffs {
 	const auto gain_db              = linear_to_gain_db(gain01);
-	const auto slope_mod            = std::pow(T(2), slope);
-	const auto M                    = blink::math::convert::db_to_linear(gain_db / T(-4));
-	const auto Mpow2                = pow(M, T(2));
+	const auto slope_mod            = std::pow(2.0f, slope);
+	const auto M                    = blink::math::convert::db_to_linear(gain_db / -4.0f);
+	const auto Mpow2                = std::pow(M, 2.0f);
 	const auto recip_Mpow2          = reciprocal(Mpow2);
-	const auto [slope_lo, slope_hi] = bi_clip(slope_mod, T(2));
-	const auto slope_hi_half        = slope_hi / T(2);
+	const auto [slope_lo, slope_hi] = bi_clip(slope_mod, 2.0f);
+	const auto slope_hi_half        = slope_hi / 2.0f;
 	const auto g2R_M                = Mpow2 + recip_Mpow2;
 	const auto g2R1                 = g2R(slope_lo, g2R_M);
 	const auto g2R2                 = g2R(slope_hi_half, g2R_M);
-	const auto g2R1_clamp           = min(T(1), g2R1);
-	const auto g2R2_clamp           = min(T(1), g2R2);
+	const auto g2R1_clamp           = std::min(1.0f, g2R1);
+	const auto g2R2_clamp           = std::min(1.0f, g2R2);
 	const auto R1x                  = g2R1 / g2R1_clamp;
-	const auto a1                   = acos(g2R1_clamp);
-	const auto a2                   = acos(g2R2_clamp);
+	const auto a1                   = std::acos(g2R1_clamp);
+	const auto a2                   = std::acos(g2R2_clamp);
 	const auto g2R2_R2p1            = R2p1(g2R2, M);
 	const auto tilt1_M              = M * g2R2_R2p1;
 	const auto tilt2_M              = M / g2R2_R2p1;
-	const auto a2div2               = a2 / T(2);
+	const auto a2div2               = a2 / 2.0f;
 	const auto tilt1_damp           = a22R(a1 + a2div2) * R1x;
 	const auto tilt2_damp           = a22R(a1 - a2div2);
-	const auto tilt1_wMid           = sqrt(tilt1_M);
-	const auto tilt2_wMid           = sqrt(tilt2_M);
-	const auto BWpow2               = pow(T(2), bw);
+	const auto tilt1_wMid           = std::sqrt(tilt1_M);
+	const auto tilt2_wMid           = std::sqrt(tilt2_M);
+	const auto BWpow2               = std::pow(2.0f, bw);
 	const auto tilt1_recip_M        = reciprocal(tilt1_M);
 	const auto tilt2_recip_M        = reciprocal(tilt2_M);
 	const auto tilt1_BW             = (BWpow2 - reciprocal(BWpow2)) * tilt1_wMid;
@@ -186,86 +235,60 @@ auto make_coeffs(T f, T gain01, T slope, T bw, float SR) -> coeffs<T> {
 	};
 }
 
-template <typename T> [[nodiscard]]
-auto svf_fbk_solve(T x, std::complex<T> zdf) -> std::tuple<T, T> {
-	const auto a = x * zdf.real();
-	const auto b = a + zdf.imag();
-	const auto c = T(1) - zdf.real();
-	const auto d = T(1.0) / c;
-	return std::make_tuple(b * d, d);
-}
-
-template <typename T> [[nodiscard]]
-auto svf_input_fbk(zdf_signal<T> in) -> zdf_signal<T> {
-	const auto [y, _] = svf_fbk_solve(in.signal, in.state * T(-1));
-	return {
-		.state  = {{T{1}, T{0}}},
-		.signal = in.signal + y
-	};
-}
-
-template <typename T> [[nodiscard]]
-auto svf_integrator_input_fbk(zdf_signal<T> in, std::complex<T> fbk) -> std::tuple<zdf_signal<T>, std::complex<T>> {
-	fbk *= T(-1);
-	const auto [y, G] = svf_fbk_solve(in.signal, fbk);
-	const auto out    = zdf_signal{{T{1}, T{0}}, in.signal + y};
-	const auto ext    = std::complex<T>{T{G + in.state.real()}, T{(fbk.imag() + in.state.imag()) * G}};
-	return std::make_tuple(out, ext);
-}
-
-template <typename T> [[nodiscard]]
-auto gain(zdf_signal<T> p, T v) -> zdf_signal<T> {
-	p.signal    *= v;
-	p.state.zdf *= v;
-	return p;
-}
-
-template <typename T> [[nodiscard]]
-auto zdf_output(zdf_signal<T> zdf, std::complex<T> ext) -> zdf_signal<T> {
+[[nodiscard]]
+auto zdf_output(zdf_signal zdf, std::complex<float> ext) -> zdf_signal {
 	zdf.state = {
 		zdf.state.real() * ext.real(),
-		zdf.state.imag() + (zdf.state.real() * ext.state.img())
+		zdf.state.imag() + (zdf.state.real() * ext.imag())
 	};
 	return zdf;
 }
 
-template <typename T> [[nodiscard]]
-auto lp_to_bp_integrator(zdf_signal<T> in, std::complex<T> fbk, T wdiv2, T BW) -> std::tuple<zdf_signal<T>, std::complex<T>> {
-	in                       = gain(in, BW);
-	const auto [signal, ext] = svf_integrator_input_fbk(in, fbk);
-	signal                   = integrator(signal, wdiv2);
-	signal                   = integrator(signal, wdiv2);
-	fbk                      = signal.state;
-	return std::make_tuple(zdf_output(signal, ext), fbk);
+[[nodiscard]]
+auto lp_to_bp_input_fbk(zdf_signal in, std::complex<float> fbk) -> std::tuple<zdf_signal, std::complex<float>> {
+	fbk *= -1.0f;
+	const auto [y, G] = svf_input_fbk_solve(in.signal, fbk);
+	const auto out    = zdf_signal{{1.0f, 0.0f}, in.signal + y};
+	const auto ext    = std::complex<float>{G + in.state.real(), (fbk.imag() + in.state.imag()) * G};
+	return std::make_tuple(out, ext);
 }
 
-template <typename T> [[nodiscard]]
-auto svf(band_shelf::state<T> state, T in, T wdiv2, T damp, T BW) -> std::tuple<band_shelf::state<T>, T, T, T> {
-	const auto HP           = svf_input_fbk({state.fbk, in});
-	const auto [BP, BP_fbk] = lp_to_bp_integrator(HP, state.integrator1_fbk, wdiv2, BW);
-	const auto [LP, LP_fbk] = lp_to_bp_integrator(BP, state.integrator2_fbk, wdiv2, BW);
-	const auto BPn          = gain(BP, damp);
-	const auto fbk          = LP.state + BPn.state;
-	state = {
-		.fbk             = LP.state + BPn.state,
-		.integrator1_fbk = BP_fbk,
-		.integrator2_fbk = LP_fbk,
-	};
+[[nodiscard]]
+auto lp_to_bp(lp_to_bp_state state, zdf_signal in, float wdiv2, float BW) -> std::tuple<lp_to_bp_state, zdf_signal> {
+	auto ext                            = std::complex<float>{};
+	in                                  = gain(in, BW);
+	auto signal                         = in;
+	std::tie(signal, ext)               = lp_to_bp_input_fbk(signal, state.fbk);
+	std::tie(state.integrator1, signal) = integrator(state.integrator1, signal, wdiv2);
+	std::tie(state.integrator2, signal) = integrator(state.integrator2, signal, wdiv2);
+	state.fbk                           = signal.state;
+	return std::make_tuple(state, zdf_output(signal, ext));
+}
+
+[[nodiscard]]
+auto svf(svf_state state, float in, float wdiv2, float damp, float BW) -> std::tuple<svf_state, float, float, float> {
+	zdf_signal HP, BP, LP;
+	HP                             = svf_input_fbk({state.fbk, in});
+	std::tie(state.lp_to_bp_1, BP) = lp_to_bp(state.lp_to_bp_1, HP, wdiv2, BW);
+	std::tie(state.lp_to_bp_2, LP) = lp_to_bp(state.lp_to_bp_2, BP, wdiv2, BW);
+	const auto BPn = gain(BP, damp);
+	state.fbk = LP.state + BPn.state;
 	return std::make_tuple(state, LP.signal, HP.signal, BPn.signal);
 }
 
-template <typename T> [[nodiscard]]
-auto tilt(band_shelf::state<T> state, T in, T wdiv2, tilt_coeffs<T> coeffs) -> std::tuple<band_shelf::state<T>, T> {
-	const auto [new_state, LP, HP, BPn] = svf(state, in, wdiv2, coeffs.damp, coeffs.BW);
-	return std::make_tuple(new_state, (LP / coeffs.M) + (HP * coeffs.M) + BPn);
+[[nodiscard]]
+auto tilt(tilt_state state, float in, float wdiv2, tilt_coeffs coeffs) -> std::tuple<tilt_state, float> {
+	float LP, HP, BPn;
+	std::tie(state.svf, LP, HP, BPn) = svf(state.svf, in, wdiv2, coeffs.damp, coeffs.BW);
+	return std::make_tuple(state, (LP / coeffs.M) + (HP * coeffs.M) + BPn);
 }
 
-template <typename T> [[nodiscard]]
-auto process(band_shelf::state<T> state, T in, const band_shelf::coeffs<T>& coeffs) -> std::tuple<band_shelf::state<T>, T> {
+[[nodiscard]]
+auto process(band_shelf::state state, float in, const band_shelf::coeffs& coeffs) -> std::tuple<band_shelf::state, float> {
 	auto signal = in;
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt1);
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt2);
-	signal *= coeffs._recip_Mpow2;
+	std::tie(state.tilt1, signal) = tilt(state.tilt1, signal, coeffs.wdiv2, coeffs.tilt1);
+	std::tie(state.tilt2, signal) = tilt(state.tilt2, signal, coeffs.wdiv2, coeffs.tilt2);
+	signal *= coeffs.recip_Mpow2;
 	return std::make_tuple(state, signal);
 }
 
@@ -287,7 +310,7 @@ auto svf(float f, float F, float _2R, float BW) -> svf_result {
 }
 
 [[nodiscard]]
-auto tilt(std::complex<float> t, float f, float F, tilt_coeffs<float> coeffs) -> std::complex<float> {
+auto tilt(std::complex<float> t, float f, float F, tilt_coeffs coeffs) -> std::complex<float> {
 	const auto [LP, BPn, HP] = svf(f, F, coeffs.damp, coeffs.BW);
 	const auto a = LP * coeffs.recip_M;
 	const auto b = HP * coeffs.M;
@@ -297,15 +320,15 @@ auto tilt(std::complex<float> t, float f, float F, tilt_coeffs<float> coeffs) ->
 }
 
 [[nodiscard]]
-auto compute(const band_shelf::coeffs<float>& coeffs, float f) -> float {
+auto compute(const band_shelf::coeffs& coeffs, float f) -> float {
 	auto s = std::complex<float>{1.0f, 0.0f};
 	s = tilt(s, f, coeffs.F, coeffs.tilt1);
 	s = tilt(s, f, coeffs.F, coeffs.tilt2);
 	s *= coeffs.recip_Mpow2;
-	return std::abs(s);
+	return abs(s);
 }
 
-auto compute(const band_shelf::coeffs<float>& coeffs, std::span<const float> in_omega, std::span<float> out_magnitude) -> void {
+auto compute(const band_shelf::coeffs& coeffs, std::span<const float> in_omega, std::span<float> out_magnitude) -> void {
 	assert (in_omega.size() == out_magnitude.size());
 	auto fn_compute = [&coeffs](float omega) -> float { return compute(coeffs, omega); };
 	std::transform(in_omega.begin(), in_omega.end(), out_magnitude.begin(), fn_compute);
@@ -315,56 +338,71 @@ auto compute(const band_shelf::coeffs<float>& coeffs, std::span<const float> in_
 
 namespace eq::filters::shelving::hilo {
 
-template <typename T>
 struct tilt_coeffs {
-	T damp;
-	T M;
-	T recip_M;
-	T wMid;
+	float damp;
+	float M;
+	float recip_M;
+	float wMid;
 };
 
-template <typename T> struct coeffs {
-	T F;
-	T Mpow2;
-	T recip_Mpow2;
-    T wdiv2;
-	tilt_coeffs<T> tilt1;
-	tilt_coeffs<T> tilt2;
-	tilt_coeffs<T> tilt3;
-	tilt_coeffs<T> tilt4;
+struct coeffs {
+	float F;
+	float Mpow2;
+	float recip_Mpow2;
+    float wdiv2;
+	tilt_coeffs tilt1;
+	tilt_coeffs tilt2;
+	tilt_coeffs tilt3;
+	tilt_coeffs tilt4;
 };
 
-template <typename T> struct state {};
+struct svf_state {
+	integrator_state integrator1;
+	integrator_state integrator2;
+	std::complex<float> fbk = {0.4f, 0.4f};
+};
 
-template <typename T> [[nodiscard]]
-auto make_coeffs(T f, T gain_db, T slope, float SR) -> hilo::coeffs<T> {
-	const auto slope_mod              = std::pow(T(2), slope);
-	const auto M                      = blink::math::convert::db_to_linear(gain_db / T(-2));
-	const auto Mpow2                  = pow(M, T(2));
+struct tilt_state {
+	svf_state svf;
+};
+
+struct state {
+	state() = default;
+	tilt_state tilt1;
+	tilt_state tilt2;
+	tilt_state tilt3;
+	tilt_state tilt4;
+};
+
+[[nodiscard]]
+auto make_coeffs(float f, float gain_db, float slope, float SR) -> hilo::coeffs {
+	const auto slope_mod              = std::pow(2.0f, slope);
+	const auto M                      = blink::math::convert::db_to_linear(gain_db / -2.0f);
+	const auto Mpow2                  = std::pow(M, 2.0f);
 	const auto recip_Mpow2            = reciprocal(Mpow2);
-	const auto [slope1_lo, slope1_hi] = bi_clip(slope_mod, T(2));
-	const auto slope1_hi_half         = slope1_hi / T(2);
-	const auto [slope2_lo, slope2_hi] = bi_clip(slope1_hi_half, T(2));
-	const auto slope2_hi_half         = slope2_hi / T(2);
+	const auto [slope1_lo, slope1_hi] = bi_clip(slope_mod, 2.0f);
+	const auto slope1_hi_half         = slope1_hi / 2.0f;
+	const auto [slope2_lo, slope2_hi] = bi_clip(slope1_hi_half, 2.0f);
+	const auto slope2_hi_half         = slope2_hi / 2.0f;
 	const auto g2R_M                  = Mpow2 + recip_Mpow2;
 	const auto g2R1                   = g2R(slope1_lo, g2R_M);
 	const auto g2R2                   = g2R(slope2_lo, g2R_M);
 	const auto g2R3                   = g2R(slope2_hi_half, g2R_M);
-	const auto g2R1_clamp             = min(T(1), g2R1);
-	const auto g2R2_clamp             = min(T(1), g2R2);
-	const auto g2R3_clamp             = min(T(1), g2R3);
+	const auto g2R1_clamp             = std::min(1.0f, g2R1);
+	const auto g2R2_clamp             = std::min(1.0f, g2R2);
+	const auto g2R3_clamp             = std::min(1.0f, g2R3);
 	const auto R1x                    = g2R1 / g2R1_clamp;
-	const auto a1                     = acos(g2R1_clamp);
-	const auto a2                     = acos(g2R2_clamp);
-	const auto a3                     = acos(g2R3_clamp);
+	const auto a1                     = std::acos(g2R1_clamp);
+	const auto a2                     = std::acos(g2R2_clamp);
+	const auto a3                     = std::acos(g2R3_clamp);
 	const auto g2R2_R2p1              = R2p1(g2R2, M);
 	const auto g2R3_R2p1              = R2p1(g2R3, M);
-	const auto M1                     = sqrt(M * g2R3_R2p1);
-	const auto tilt34_M               = sqrt(M / g2R3_R2p1);
-	const auto tilt1_M                = M * g2R2_R2p1;
-	const auto tilt2_M                = M / g2R2_R2p1;
-	const auto a2div2                 = a2 / T(2);
-	const auto a3div4                 = a3 / T(4);
+	const auto M1                     = std::sqrt(M * g2R3_R2p1);
+	const auto tilt34_M               = std::sqrt(M / g2R3_R2p1);
+	const auto tilt1_M                = M1 * g2R2_R2p1;
+	const auto tilt2_M                = M1 / g2R2_R2p1;
+	const auto a2div2                 = a2 / 2.0f;
+	const auto a3div4                 = a3 / 4.0f;
 	const auto tilt1_damp             = a22R(a1 + a2div2) * R1x;
 	const auto tilt2_damp             = a22R(a1 - a2div2);
 	const auto tilt3_damp             = a22R((a1 + a2div2) - a3div4);
@@ -372,9 +410,9 @@ auto make_coeffs(T f, T gain_db, T slope, float SR) -> hilo::coeffs<T> {
 	const auto tilt1_recip_M          = reciprocal(tilt1_M);
 	const auto tilt2_recip_M          = reciprocal(tilt2_M);
 	const auto tilt34_recip_M         = reciprocal(tilt34_M);
-	const auto tilt1_wMid             = sqrt(tilt1_M);
-	const auto tilt2_wMid             = sqrt(tilt2_M);
-	const auto tilt34_wMid            = sqrt(tilt34_M);
+	const auto tilt1_wMid             = std::sqrt(tilt1_M);
+	const auto tilt2_wMid             = std::sqrt(tilt2_M);
+	const auto tilt34_wMid            = std::sqrt(tilt34_M);
 	const auto wdiv2                  = compute_wdiv2(f, SR);
 	return {
 		.F           = f,
@@ -408,13 +446,32 @@ auto make_coeffs(T f, T gain_db, T slope, float SR) -> hilo::coeffs<T> {
 	};
 }
 
-template <typename T> [[nodiscard]]
-auto process(hilo::state<T> state, T in, const hilo::coeffs<T>& coeffs) -> std::tuple<hilo::state<T>, T> {
+[[nodiscard]]
+auto svf(svf_state state, float in, float wdiv2, float damp) -> std::tuple<svf_state, float, float, float> {
+	zdf_signal HP, BP, LP;
+	HP                              = svf_input_fbk({state.fbk, in});
+	std::tie(state.integrator1, BP) = integrator(state.integrator1, HP, wdiv2);
+	std::tie(state.integrator2, LP) = integrator(state.integrator2, BP, wdiv2);
+	const auto BPn = gain(BP, damp);
+	state.fbk = LP.state + BPn.state;
+	return std::make_tuple(state, LP.signal, HP.signal, BPn.signal);
+}
+
+[[nodiscard]]
+auto tilt(tilt_state state, float in, float wdiv2, tilt_coeffs coeffs) -> std::tuple<tilt_state, float> {
+	wdiv2 *= std::sqrt(coeffs.M);
+	float LP, HP, BPn;
+	std::tie(state.svf, LP, HP, BPn) = svf(state.svf, in, wdiv2, coeffs.damp);
+	return std::make_tuple(state, (LP / coeffs.M) + (HP * coeffs.M) + BPn);
+}
+
+[[nodiscard]]
+auto process(hilo::state state, float in, const hilo::coeffs& coeffs) -> std::tuple<hilo::state, float> {
 	auto signal = in;
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt1);
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt2);
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt3);
-	std::tie(state, signal) = tilt(state, signal, coeffs._wdiv2, coeffs.tilt4);
+	std::tie(state.tilt1, signal) = tilt(state.tilt1, signal, coeffs.wdiv2, coeffs.tilt1);
+	std::tie(state.tilt2, signal) = tilt(state.tilt2, signal, coeffs.wdiv2, coeffs.tilt2);
+	std::tie(state.tilt3, signal) = tilt(state.tilt3, signal, coeffs.wdiv2, coeffs.tilt3);
+	std::tie(state.tilt4, signal) = tilt(state.tilt4, signal, coeffs.wdiv2, coeffs.tilt4);
 	return std::make_tuple(state, signal);
 }
 
@@ -428,7 +485,7 @@ auto svf(float f, float F, float _2R) -> svf_result {
 }
 
 [[nodiscard]]
-auto tilt(std::complex<float> t, float f, float F, tilt_coeffs<float> coeffs) -> std::complex<float> {
+auto tilt(std::complex<float> t, float f, float F, tilt_coeffs coeffs) -> std::complex<float> {
 	const auto [LP, BPn, HP] = svf(f, F * coeffs.wMid, coeffs.damp);
 	const auto a = LP * coeffs.recip_M;
 	const auto b = HP * coeffs.M;
@@ -438,7 +495,7 @@ auto tilt(std::complex<float> t, float f, float F, tilt_coeffs<float> coeffs) ->
 }
 
 [[nodiscard]]
-auto compute(const hilo::coeffs<float>& coeffs, float f) -> std::complex<float> {
+auto compute(const hilo::coeffs& coeffs, float f) -> std::complex<float> {
 	auto s = std::complex<float>{1.0f, 0.0f};
 	s = hilo::tf::tilt(s, f, coeffs.F, coeffs.tilt1);
 	s = hilo::tf::tilt(s, f, coeffs.F, coeffs.tilt2);
@@ -451,19 +508,19 @@ auto compute(const hilo::coeffs<float>& coeffs, float f) -> std::complex<float> 
 
 namespace eq::filters::shelving::hi_shelf {
 
-template <typename T> struct coeffs : hilo::coeffs<T> {};
-template <typename T> using state  = hilo::state<T>;
+struct coeffs { hilo::coeffs hilo; };
+struct state { hilo::state hilo; };
 
-template <typename T> [[nodiscard]]
-auto make_coeffs(T f, T gain01, T slope, float SR) -> coeffs<T> {
-	return static_cast<coeffs<T>>(hilo::make_coeffs(f, linear_to_gain_db(-gain01), slope, SR));
+[[nodiscard]]
+auto make_coeffs(float f, float gain01, float slope, float SR) -> coeffs {
+	return {.hilo = hilo::make_coeffs(f, linear_to_gain_db(0.0f-gain01), slope, SR)};
 }
 
-template <typename T> [[nodiscard]]
-auto process(hi_shelf::state<T> state, T in, const hi_shelf::coeffs<T>& coeffs) -> std::tuple<hi_shelf::state<T>, T> {
+[[nodiscard]]
+auto process(hi_shelf::state state, float in, const hi_shelf::coeffs& coeffs) -> std::tuple<hi_shelf::state, float> {
 	auto signal = in;
-	std::tie(state, signal) = hilo::process(state, signal, coeffs);
-	signal *= coeffs.Mpow2;
+	std::tie(state.hilo, signal) = hilo::process(state.hilo, signal, coeffs.hilo);
+	signal *= coeffs.hilo.Mpow2;
 	return std::make_tuple(state, signal);
 }
 
@@ -472,11 +529,11 @@ auto process(hi_shelf::state<T> state, T in, const hi_shelf::coeffs<T>& coeffs) 
 namespace eq::filters::shelving::hi_shelf::tf {
 
 [[nodiscard]]
-auto compute(const hi_shelf::coeffs<float>& coeffs, float f) -> float {
-	return std::abs(hilo::tf::compute(coeffs, f)) * coeffs.Mpow2;
+auto compute(const hi_shelf::coeffs& coeffs, float f) -> float {
+	return abs(hilo::tf::compute(coeffs.hilo, f)) * coeffs.hilo.Mpow2;
 }
 
-auto compute(const hi_shelf::coeffs<float>& coeffs, std::span<const float> in_omega, std::span<float> out_magnitude) -> void {
+auto compute(const hi_shelf::coeffs& coeffs, std::span<const float> in_omega, std::span<float> out_magnitude) -> void {
 	assert (in_omega.size() == out_magnitude.size());
 	auto fn_compute = [&coeffs](float omega) -> float { return compute(coeffs, omega); };
 	std::transform(in_omega.begin(), in_omega.end(), out_magnitude.begin(), fn_compute);
@@ -486,19 +543,19 @@ auto compute(const hi_shelf::coeffs<float>& coeffs, std::span<const float> in_om
 
 namespace eq::filters::shelving::lo_shelf {
 
-template <typename T> struct coeffs : hilo::coeffs<T> {};
-template <typename T> using state  = hilo::state<T>;
+struct coeffs { hilo::coeffs hilo; };
+struct state { hilo::state hilo; };
 
-template <typename T> [[nodiscard]]
-auto make_coeffs(T f, T gain01, T slope, float SR) -> coeffs<T> {
-	return static_cast<coeffs<T>>(hilo::make_coeffs(f, linear_to_gain_db(gain01), slope, SR));
+[[nodiscard]]
+auto make_coeffs(float f, float gain01, float slope, float SR) -> coeffs {
+	return {.hilo = hilo::make_coeffs(f, linear_to_gain_db(gain01), slope, SR)};
 }
 
-template <typename T> [[nodiscard]]
-auto process(lo_shelf::state<T> state, T in, const lo_shelf::coeffs<T>& coeffs) -> std::tuple<lo_shelf::state<T>, T> {
+[[nodiscard]]
+auto process(lo_shelf::state state, float in, const lo_shelf::coeffs& coeffs) -> std::tuple<lo_shelf::state, float> {
 	auto signal = in;
-	std::tie(state, signal) = hilo::process(state, signal, coeffs);
-	signal *= coeffs.recip_Mpow2;
+	std::tie(state.hilo, signal) = hilo::process(state.hilo, signal, coeffs.hilo);
+	signal *= coeffs.hilo.recip_Mpow2;
 	return std::make_tuple(state, signal);
 }
 
@@ -507,11 +564,11 @@ auto process(lo_shelf::state<T> state, T in, const lo_shelf::coeffs<T>& coeffs) 
 namespace eq::filters::shelving::lo_shelf::tf {
 
 [[nodiscard]]
-auto compute(const lo_shelf::coeffs<float>& coeffs, float f) -> float {
-	return std::abs(hilo::tf::compute(coeffs, f)) * coeffs.recip_Mpow2;
+auto compute(const lo_shelf::coeffs& coeffs, float f) -> float {
+	return abs(hilo::tf::compute(coeffs.hilo, f)) * coeffs.hilo.recip_Mpow2;
 }
 
-auto compute(const lo_shelf::coeffs<float>& coeffs, std::span<const float> in_omega, std::span<float> out_magnitude) -> void {
+auto compute(const lo_shelf::coeffs& coeffs, std::span<const float> in_omega, std::span<float> out_magnitude) -> void {
 	assert (in_omega.size() == out_magnitude.size());
 	auto fn_compute = [&coeffs](float omega) -> float { return compute(coeffs, omega); };
 	std::transform(in_omega.begin(), in_omega.end(), out_magnitude.begin(), fn_compute);
