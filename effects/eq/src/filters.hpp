@@ -41,7 +41,7 @@ struct zdf_signal {
 };
 
 struct integrator_state {
-	float fbk = 0.4f;
+	float fbk = 0.0f;
 };
 
 [[nodiscard]]
@@ -148,13 +148,13 @@ namespace eq::filters::shelving::band_shelf {
 struct lp_to_bp_state {
 	integrator_state integrator1;
 	integrator_state integrator2;
-	std::complex<float> fbk = {0.4f, 0.4f};
+	std::complex<float> fbk = {0.0f, 0.0f};
 };
 
 struct svf_state {
 	lp_to_bp_state lp_to_bp_1;
 	lp_to_bp_state lp_to_bp_2;
-	std::complex<float> fbk = {0.4f, 0.4f};
+	std::complex<float> fbk = {0.0f, 0.0f};
 };
 
 struct tilt_state {
@@ -359,7 +359,7 @@ struct coeffs {
 struct svf_state {
 	integrator_state integrator1;
 	integrator_state integrator2;
-	std::complex<float> fbk = {0.4f, 0.4f};
+	std::complex<float> fbk = {0.0f, 0.0f};
 };
 
 struct tilt_state {
