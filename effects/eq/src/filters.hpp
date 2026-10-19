@@ -9,7 +9,7 @@
 
 namespace eq::filters {
 
-constexpr auto GAIN_MAX = 30.0f;
+constexpr auto GAIN_MAX = 12.0f;
 
 [[nodiscard]]
 auto reciprocal(float v) -> float {
@@ -148,13 +148,13 @@ namespace eq::filters::shelving::band_shelf {
 struct lp_to_bp_state {
 	integrator_state integrator1;
 	integrator_state integrator2;
-	std::complex<float> fbk;
+	std::complex<float> fbk = {0.4f, 0.4f};
 };
 
 struct svf_state {
 	lp_to_bp_state lp_to_bp_1;
 	lp_to_bp_state lp_to_bp_2;
-	std::complex<float> fbk;
+	std::complex<float> fbk = {0.4f, 0.4f};
 };
 
 struct tilt_state {
@@ -187,7 +187,7 @@ struct coeffs {
 auto make_coeffs(float f, float gain01, float slope, float bw, float SR) -> coeffs {
 	const auto gain_db              = linear_to_gain_db(gain01);
 	const auto slope_mod            = std::pow(2.0f, slope);
-	const auto M                    = blink::math::convert::db_to_linear(gain_db / -4.0f);
+	const auto M                    = blink::math::convert::db_to_linear(gain_db / -2.0f);
 	const auto Mpow2                = std::pow(M, 2.0f);
 	const auto recip_Mpow2          = reciprocal(Mpow2);
 	const auto [slope_lo, slope_hi] = bi_clip(slope_mod, 2.0f);
@@ -255,14 +255,14 @@ auto lp_to_bp_input_fbk(zdf_signal in, std::complex<float> fbk) -> std::tuple<zd
 
 [[nodiscard]]
 auto lp_to_bp(lp_to_bp_state state, zdf_signal in, float wdiv2, float BW) -> std::tuple<lp_to_bp_state, zdf_signal> {
-	auto ext                            = std::complex<float>{};
-	in                                  = gain(in, BW);
-	auto signal                         = in;
-	std::tie(signal, ext)               = lp_to_bp_input_fbk(signal, state.fbk);
-	std::tie(state.integrator1, signal) = integrator(state.integrator1, signal, wdiv2);
-	std::tie(state.integrator2, signal) = integrator(state.integrator2, signal, wdiv2);
-	state.fbk                           = signal.state;
-	return std::make_tuple(state, zdf_output(signal, ext));
+	zdf_signal a, b, c;
+	auto ext                       = std::complex<float>{};
+	in                             = gain(in, BW);
+	std::tie(a, ext)               = lp_to_bp_input_fbk(in, state.fbk);
+	std::tie(state.integrator1, b) = integrator(state.integrator1, a, wdiv2);
+	std::tie(state.integrator2, c) = integrator(state.integrator2, b, wdiv2);
+	state.fbk                      = c.state;
+	return std::make_tuple(state, zdf_output(b, ext));
 }
 
 [[nodiscard]]

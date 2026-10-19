@@ -41,6 +41,8 @@ auto process(filters::shelving::band_shelf::state* band, ml::DSPVector signal, m
 		auto coeffs = filters::shelving::band_shelf::make_coeffs(freq[i], gain01[i], slope[i], bw[i], SR);
 		std::tie(*band, signal[i]) = filters::shelving::band_shelf::process(*band, signal[i], coeffs);
 	}
+	auto test_coeffs = filters::shelving::band_shelf::make_coeffs(freq[0], gain01[0], slope[0], bw[0], 44100.0f);
+	auto test0 = filters::shelving::band_shelf::process({}, 0.5f, test_coeffs);
 	return signal;
 }
 
@@ -59,12 +61,6 @@ auto process(filters::shelving::lo_shelf::state* band, ml::DSPVector signal, ml:
 		auto coeffs = filters::shelving::lo_shelf::make_coeffs(freq[i], gain01[i], slope[i], SR);
 		std::tie(*band, signal[i]) = filters::shelving::lo_shelf::process(*band, signal[i], coeffs);
 	}
-	// auto test_coeffs = filters::shelving::lo_shelf::make_coeffs(freq[0], gain01[0], slope[0], 44100.0f);
-	// auto test0 = filters::shelving::lo_shelf::process({}, 0.5f, test_coeffs);
-	// auto test1 = filters::shelving::lo_shelf::process({}, 0.6f, test_coeffs);
-	// auto test2 = filters::shelving::lo_shelf::process({}, 0.7f, test_coeffs);
-	// auto test3 = filters::shelving::lo_shelf::process({}, 0.8f, test_coeffs);
-	// auto test4 = filters::shelving::lo_shelf::process({}, 0.9f, test_coeffs);
 	return signal;
 }
 
