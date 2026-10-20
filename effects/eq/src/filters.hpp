@@ -1,5 +1,6 @@
 #pragma once
 
+// @TODO: okay i figured this out now: output of second integrator is supposed to trigger the calculation of Ext within the same iteration!
 #include "blink/math.hpp"
 #include <cassert>
 #include <complex>
@@ -82,43 +83,36 @@ auto compute_wdiv2(float f, float SR) -> float {
 }
 
 [[nodiscard]]
-auto integrator(integrator_state state, zdf_signal zdf, float wdiv2) -> std::tuple<integrator_state, zdf_signal> {
-	const auto a = zdf.signal * wdiv2;
-	const auto r = wdiv2 * zdf.state.real();
-	const auto i = state.fbk + (zdf.state.imag() * wdiv2);
+auto integrator(integrator_state state, float x, std::complex<float> zdf, float wdiv2) -> std::tuple<integrator_state, float, std::complex<float>> {
+	const auto a = x * wdiv2;
 	const auto out = a + state.fbk;
 	state.fbk = a + out;
 	snd::flush_denormal_to_zero(state.fbk);
 	zdf = {
-		.state = {r, i},
-		.signal = out,
+		wdiv2 * zdf.real(),
+		state.fbk + (zdf.imag() * wdiv2)
 	};
-	return std::make_tuple(state, zdf);
+	return std::make_tuple(state, out, zdf);
 }
 
 [[nodiscard]]
-auto svf_input_fbk_solve(float x, std::complex<float> zdf) -> std::tuple<float, float> {
-	const auto a = x * zdf.real();
-	const auto b = a + zdf.imag();
-	const auto c = 1.0f - zdf.real();
-	const auto d = 1.0f / c;
-	return std::make_tuple(b * d, d);
+auto compute_1divG(float g) -> float {
+	return 1.0f / (1.0f - g);
 }
 
 [[nodiscard]]
-auto svf_input_fbk(zdf_signal in) -> zdf_signal {
-	const auto [y, _] = svf_input_fbk_solve(in.signal, in.state * -1.0f);
-	return {
-		.state  = {1.0f, 0.0f},
-		.signal = in.signal + y
-	};
+auto solve_y(float x, float g, float s) -> float {
+	const auto a      = x * g;
+	const auto b      = a + s;
+	const auto _1divG = compute_1divG(g);
+	return b * _1divG;
 }
 
 [[nodiscard]]
-auto gain(zdf_signal zdf, float v) -> zdf_signal {
-	zdf.signal *= v;
-	zdf.state  *= v;
-	return zdf;
+auto gain(float v, std::complex<float> zdf, float amount) -> std::tuple<float, std::complex<float>> {
+	v   *= amount;
+	zdf *= amount;
+	return std::make_tuple(v, zdf);
 }
 
 } // eq::shelving
@@ -148,7 +142,9 @@ namespace eq::filters::shelving::band_shelf {
 struct lp_to_bp_state {
 	integrator_state integrator1;
 	integrator_state integrator2;
-	std::complex<float> fbk = {0.0f, 0.0f};
+	float fbk_g     = 0.0f;
+	float fbk_s     = 0.0f;
+	float fbk_1divG = 0.0f;
 };
 
 struct svf_state {
@@ -236,44 +232,54 @@ auto make_coeffs(float f, float gain01, float slope, float bw, float SR) -> coef
 }
 
 [[nodiscard]]
-auto zdf_output(zdf_signal zdf, std::complex<float> ext) -> zdf_signal {
-	zdf.state = {
-		zdf.state.real() * ext.real(),
-		zdf.state.imag() + (zdf.state.real() * ext.imag())
+auto zdf_output(std::complex<float> zdf, std::complex<float> ext) -> std::complex<float> {
+	return std::complex<float>{
+		ext.real() * zdf.real(),
+		zdf.imag() + (zdf.real() * ext.imag())
 	};
-	return zdf;
 }
 
 [[nodiscard]]
-auto lp_to_bp_input_fbk(zdf_signal in, std::complex<float> fbk) -> std::tuple<zdf_signal, std::complex<float>> {
-	fbk *= -1.0f;
-	const auto [y, G] = svf_input_fbk_solve(in.signal, fbk);
-	const auto out    = zdf_signal{{1.0f, 0.0f}, in.signal + y};
-	const auto ext    = std::complex<float>{G + in.state.real(), (fbk.imag() + in.state.imag()) * G};
-	return std::make_tuple(out, ext);
+auto compute_ext(std::complex<float> zdf, float s, float fbk_1divG) -> std::complex<float> {
+	return {
+		fbk_1divG * zdf.real(),
+		(zdf.imag() + s) * fbk_1divG
+	};
 }
 
 [[nodiscard]]
-auto lp_to_bp(lp_to_bp_state state, zdf_signal in, float wdiv2, float BW) -> std::tuple<lp_to_bp_state, zdf_signal> {
-	zdf_signal a, b, c;
-	auto ext                       = std::complex<float>{};
-	in                             = gain(in, BW);
-	std::tie(a, ext)               = lp_to_bp_input_fbk(in, state.fbk);
-	std::tie(state.integrator1, b) = integrator(state.integrator1, a, wdiv2);
-	std::tie(state.integrator2, c) = integrator(state.integrator2, b, wdiv2);
-	state.fbk                      = c.state;
-	return std::make_tuple(state, zdf_output(b, ext));
+auto lp_to_bp(lp_to_bp_state state, float x, std::complex<float> zdf, float wdiv2, float BW) -> std::tuple<lp_to_bp_state, float, std::complex<float>> {
+	std::tie(x, zdf)                    = gain(x, zdf, BW);
+	auto gained_zdf                     = zdf;
+	const auto y                        = solve_y(x, state.fbk_g, state.fbk_s);
+	x                                   = x + y;
+	zdf                                 = {1.0f, 0.0f};
+	std::tie(state.integrator1, x, zdf) = integrator(state.integrator1, x, zdf, wdiv2);
+	auto out_x                          = x;
+	auto post_integ1_zdf                = zdf;
+	std::tie(state.integrator2, x, zdf) = integrator(state.integrator2, x, zdf, wdiv2);
+	state.fbk_g                         = zdf.real() * -1.0f;
+	state.fbk_s                         = zdf.imag() * -1.0f;
+	auto ext                            = compute_ext(gained_zdf, state.fbk_s, state.fbk_1divG);
+	state.fbk_1divG                     = compute_1divG(state.fbk_g);
+	const auto out_zdf                  = zdf_output(post_integ1_zdf, ext);
+	return std::make_tuple(state, out_x, out_zdf);
 }
 
 [[nodiscard]]
-auto svf(svf_state state, float in, float wdiv2, float damp, float BW) -> std::tuple<svf_state, float, float, float> {
-	zdf_signal HP, BP, LP;
-	HP                             = svf_input_fbk({state.fbk, in});
-	std::tie(state.lp_to_bp_1, BP) = lp_to_bp(state.lp_to_bp_1, HP, wdiv2, BW);
-	std::tie(state.lp_to_bp_2, LP) = lp_to_bp(state.lp_to_bp_2, BP, wdiv2, BW);
-	const auto BPn = gain(BP, damp);
-	state.fbk = LP.state + BPn.state;
-	return std::make_tuple(state, LP.signal, HP.signal, BPn.signal);
+auto svf(svf_state state, float x, float wdiv2, float damp, float BW) -> std::tuple<svf_state, float, float, float> {
+	auto zdf                           = std::complex<float>{1.0f, 0.0f};
+	auto BPn_zdf                       = std::complex<float>{};
+	auto BPn                           = 0.0f;
+	const auto y                       = solve_y(x, state.fbk.real(), state.fbk.imag());
+	x                                  = x + y;
+	const auto HP                      = x;
+	std::tie(state.lp_to_bp_1, x, zdf) = lp_to_bp(state.lp_to_bp_1, x, zdf, wdiv2, BW);
+	std::tie(BPn, BPn_zdf)             = gain(x, zdf, damp);
+	std::tie(state.lp_to_bp_2, x, zdf) = lp_to_bp(state.lp_to_bp_2, x, zdf, wdiv2, BW);
+	const auto LP                      = x;
+	state.fbk = (BPn_zdf + zdf) * -1.0f;
+	return std::make_tuple(state, LP, HP, BPn);
 }
 
 [[nodiscard]]
@@ -447,14 +453,19 @@ auto make_coeffs(float f, float gain_db, float slope, float SR) -> hilo::coeffs 
 }
 
 [[nodiscard]]
-auto svf(svf_state state, float in, float wdiv2, float damp) -> std::tuple<svf_state, float, float, float> {
-	zdf_signal HP, BP, LP;
-	HP                              = svf_input_fbk({state.fbk, in});
-	std::tie(state.integrator1, BP) = integrator(state.integrator1, HP, wdiv2);
-	std::tie(state.integrator2, LP) = integrator(state.integrator2, BP, wdiv2);
-	const auto BPn = gain(BP, damp);
-	state.fbk = LP.state + BPn.state;
-	return std::make_tuple(state, LP.signal, HP.signal, BPn.signal);
+auto svf(svf_state state, float x, float wdiv2, float damp) -> std::tuple<svf_state, float, float, float> {
+	auto zdf                            = std::complex<float>{1.0f, 0.0f};
+	auto BPn_zdf                        = std::complex<float>{};
+	auto BPn                            = 0.0f;
+	const auto y                        = solve_y(x, state.fbk.real(), state.fbk.imag());
+	x                                   = x + y;
+	const auto HP                       = x;
+	std::tie(state.integrator1, x, zdf) = integrator(state.integrator1, x, zdf, wdiv2);
+	std::tie(BPn, BPn_zdf)              = gain(x, zdf, damp);
+	std::tie(state.integrator2, x, zdf) = integrator(state.integrator2, x, zdf, wdiv2);
+	const auto LP                       = x;
+	state.fbk = zdf + BPn_zdf;
+	return std::make_tuple(state, LP, HP, BPn);
 }
 
 [[nodiscard]]

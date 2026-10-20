@@ -215,7 +215,8 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.curve     = "Band 8 Type"
 		},
 		.enabled   = true,
-		.frequency = blink::math::convert::filter_hz_to_linear(4000.0f),
+		.frequency = blink::math::convert::filter_hz_to_linear(600.0f),
+		.bandwidth = 1.0f,
 	},
 };
 
