@@ -130,9 +130,8 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 1 Bandwidth",
 			.curve     = "Band 1 Type"
 		},
-		.enabled   = false,
-		.frequency = blink::math::convert::filter_hz_to_linear(50.0f),
-		.gain      = 0.0f,
+		.enabled   = true,
+		.frequency = blink::math::convert::filter_hz_to_linear(20.0f),
 		.curve     = band_type::lo_shelf,
 	},
 	band_spec{
@@ -156,7 +155,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 3 Bandwidth",
 			.curve     = "Band 3 Type"
 		},
-		.enabled   = true,
+		.enabled   = false,
 		.frequency = blink::math::convert::filter_hz_to_linear(200.0f),
 	},
 	band_spec{
@@ -168,8 +167,8 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 4 Bandwidth",
 			.curve     = "Band 4 Type"
 		},
-		.enabled   = false,
-		.frequency = blink::math::convert::filter_hz_to_linear(400.0f),
+		.enabled   = true,
+		.frequency = blink::math::convert::filter_hz_to_linear(315.0f),
 		.curve     = band_type::band_shelf,
 	},
 	band_spec{
@@ -181,7 +180,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 5 Bandwidth",
 			.curve     = "Band 5 Type"
 		},
-		.enabled   = true,
+		.enabled   = false,
 		.frequency = blink::math::convert::filter_hz_to_linear(600.0f),
 	},
 	band_spec{
@@ -193,7 +192,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 6 Bandwidth",
 			.curve     = "Band 6 Type"
 		},
-		.enabled   = true,
+		.enabled   = false,
 		.frequency = blink::math::convert::filter_hz_to_linear(1000.0f),
 	},
 	band_spec{
@@ -217,8 +216,9 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 8 Bandwidth",
 			.curve     = "Band 8 Type"
 		},
-		.enabled   = false,
-		.frequency = blink::math::convert::filter_hz_to_linear(600.0f),
+		.enabled   = true,
+		.frequency = blink::math::convert::filter_hz_to_linear(5000.0f),
+		.curve     = band_type::hi_shelf,
 	},
 };
 
