@@ -37,28 +37,25 @@ auto make_audio_data(const Model& model, const blink_UniformParamData* param_dat
 
 auto settle(band_shelf_filter* filter, float freq, float gain01, float slope, float bw, float SR) -> void {
 	const auto coeffs = filters::shelving::band_shelf::make_coeffs(freq, gain01, slope, bw, SR);
-	for (size_t i = 0; i < SETTLE_FRAMES; i++) {
-		std::tie(filter->state, std::ignore) = filters::shelving::band_shelf::process(filter->state, 0.0f, coeffs);
-	}
+	filter->state     = filters::shelving::band_shelf::settle(filter->state, coeffs);
+	filter->settled   = true;
 }
 
 auto settle(hi_shelf_filter* filter, float freq, float gain01, float slope, float SR) -> void {
 	const auto coeffs = filters::shelving::hi_shelf::make_coeffs(freq, gain01, slope, SR);
-	for (size_t i = 0; i < SETTLE_FRAMES; i++) {
-		std::tie(filter->state, std::ignore) = filters::shelving::hi_shelf::process(filter->state, 0.0f, coeffs);
-	}
+	filter->state     = filters::shelving::hi_shelf::settle(filter->state, coeffs);
+	filter->settled   = true;
 }
 
 auto settle(lo_shelf_filter* filter, float freq, float gain01, float slope, float SR) -> void {
 	const auto coeffs = filters::shelving::lo_shelf::make_coeffs(freq, gain01, slope, SR);
-	for (size_t i = 0; i < SETTLE_FRAMES; i++) {
-		std::tie(filter->state, std::ignore) = filters::shelving::lo_shelf::process(filter->state, 0.0f, coeffs);
-	}
+	filter->state     = filters::shelving::lo_shelf::settle(filter->state, coeffs);
+	filter->settled   = true;
 }
 
 [[nodiscard]]
 auto process(band_shelf_filter* filter, ml::DSPVector signal, ml::DSPVector freq, ml::DSPVector gain01, ml::DSPVector slope, ml::DSPVector bw, float SR) -> ml::DSPVector {
-	if (!filter->init) {
+	if (!filter->settled) {
 		settle(filter, freq[0], gain01[0], slope[0], bw[0], SR);
 	}
 	for (int i = 0; i < kFloatsPerDSPVector; i++) {
@@ -70,7 +67,7 @@ auto process(band_shelf_filter* filter, ml::DSPVector signal, ml::DSPVector freq
 
 [[nodiscard]]
 auto process(hi_shelf_filter* filter, ml::DSPVector signal, ml::DSPVector freq, ml::DSPVector gain01, ml::DSPVector slope, float SR) -> ml::DSPVector {
-	if (!filter->init) {
+	if (!filter->settled) {
 		settle(filter, freq[0], gain01[0], slope[0], SR);
 	}
 	for (int i = 0; i < kFloatsPerDSPVector; i++) {
@@ -82,7 +79,7 @@ auto process(hi_shelf_filter* filter, ml::DSPVector signal, ml::DSPVector freq, 
 
 [[nodiscard]]
 auto process(lo_shelf_filter* filter, ml::DSPVector signal, ml::DSPVector freq, ml::DSPVector gain01, ml::DSPVector slope, float SR) -> ml::DSPVector {
-	if (!filter->init) {
+	if (!filter->settled) {
 		settle(filter, freq[0], gain01[0], slope[0], SR);
 	}
 	for (int i = 0; i < kFloatsPerDSPVector; i++) {

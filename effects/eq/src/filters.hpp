@@ -1,6 +1,5 @@
 #pragma once
 
-// @TODO: okay i figured this out now: output of second integrator is supposed to trigger the calculation of Ext within the same iteration!
 #include "blink/math.hpp"
 #include <cassert>
 #include <complex>
@@ -10,7 +9,8 @@
 
 namespace eq::filters {
 
-constexpr auto GAIN_MAX    = 12.0f;
+constexpr auto GAIN_MAX      = 12.0f;
+constexpr auto SETTLE_FRAMES = 2;
 
 [[nodiscard]]
 auto reciprocal(float v) -> float {
@@ -27,6 +27,13 @@ auto bi_clip(float v, float max) -> std::pair<float,float> {
 [[nodiscard]] auto linear_to_gain_db(float v) { return v * GAIN_MAX; }
 
 } // eq::filters
+
+// NOTE: Remember to call settle()!
+
+// At extreme parameter values these filters may need to take a frame to "settle" first
+// (i.e. once you are ready to begin processing the filter with your initial parameter
+// values, call settle() to feed the filters with a couple frames of silence before
+// suddenly throwing audio data at them, otherwise they may glitch.)
 
 namespace eq::filters::shelving {
 
@@ -298,6 +305,14 @@ auto process(band_shelf::state state, float in, const band_shelf::coeffs& coeffs
 	return std::make_tuple(state, signal);
 }
 
+[[nodiscard]]
+auto settle(band_shelf::state state, const band_shelf::coeffs& coeffs) -> band_shelf::state {
+	for (size_t i = 0; i < SETTLE_FRAMES; i++) {
+		std::tie(state, std::ignore) = process(state, 0.0f, coeffs);
+	}
+	return state;
+}
+
 } // eq::filters::shelving::band_shelf
 
 namespace eq::filters::shelving::band_shelf::tf {
@@ -486,6 +501,14 @@ auto process(hilo::state state, float in, const hilo::coeffs& coeffs) -> std::tu
 	return std::make_tuple(state, signal);
 }
 
+[[nodiscard]]
+auto settle(hilo::state state, const hilo::coeffs& coeffs) -> hilo::state {
+	for (size_t i = 0; i < SETTLE_FRAMES; i++) {
+		std::tie(state, std::ignore) = process(state, 0.0f, coeffs);
+	}
+	return state;
+}
+
 } // eq::filters::shelving::hilo
 
 namespace eq::filters::shelving::hilo::tf {
@@ -535,6 +558,12 @@ auto process(hi_shelf::state state, float in, const hi_shelf::coeffs& coeffs) ->
 	return std::make_tuple(state, signal);
 }
 
+[[nodiscard]]
+auto settle(hi_shelf::state state, const hi_shelf::coeffs& coeffs) -> hi_shelf::state {
+	state.hilo = hilo::settle(state.hilo, coeffs.hilo);
+	return state;
+}
+
 } // eq::filters::shelving::hi_shelf
 
 namespace eq::filters::shelving::hi_shelf::tf {
@@ -568,6 +597,12 @@ auto process(lo_shelf::state state, float in, const lo_shelf::coeffs& coeffs) ->
 	std::tie(state.hilo, signal) = hilo::process(state.hilo, signal, coeffs.hilo);
 	signal *= coeffs.hilo.recip_Mpow2;
 	return std::make_tuple(state, signal);
+}
+
+[[nodiscard]]
+auto settle(lo_shelf::state state, const lo_shelf::coeffs& coeffs) -> lo_shelf::state {
+	state.hilo = hilo::settle(state.hilo, coeffs.hilo);
+	return state;
 }
 
 } // eq::filters::shelving::lo_shelf

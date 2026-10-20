@@ -8,7 +8,6 @@ namespace eq {
 
 static inline constexpr auto BAND_COUNT    = 8;
 static inline constexpr auto CHANNEL_COUNT = 2;
-static inline constexpr auto SETTLE_FRAMES = 4;
 
 struct Params {
 	struct {
@@ -28,17 +27,17 @@ struct band_shelf_filter {
 	// without giving them a chance to settle first which can cause glitches at
 	// extreme parameter values so we set these flags to true after a reset and
 	// then give the filters a chance to settle the first time they are used.
-	bool init = false;
+	bool settled = false;
 	filters::shelving::band_shelf::state state;
 };
 
 struct hi_shelf_filter {
-	bool init = false;
+	bool settled = false;
 	filters::shelving::hi_shelf::state state;
 };
 
 struct lo_shelf_filter {
-	bool init = false;
+	bool settled = false;
 	filters::shelving::lo_shelf::state state;
 };
 
@@ -53,7 +52,6 @@ struct channel_dsp {
 };
 
 struct UnitDSP {
-	bool filter_init = false;
 	blink_SR SR;
 	blink::BlockPositions block_positions;
 	std::array<channel_dsp, CHANNEL_COUNT> channels;
