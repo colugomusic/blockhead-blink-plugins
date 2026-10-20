@@ -12,7 +12,7 @@ auto freq_param_to_filter_hz(float v) -> float {
 
 [[nodiscard]] inline
 auto gain_param_to_band_shelf_db(float v) -> snd::filters::gain_db {
-	return {convert::linear_to_gain_db(v)};
+	return {convert::raw_to_gain_db(v)};
 }
 
 [[nodiscard]] inline
@@ -22,17 +22,17 @@ auto gain_param_to_band_pass_db(float) -> snd::filters::gain_db {
 
 [[nodiscard]] inline
 auto gain_param_to_hi_shelf_db(float v) -> snd::filters::inverted_gain_db {
-	return {-convert::linear_to_gain_db(v)};
+	return {-convert::raw_to_gain_db(v)};
 }
 
 [[nodiscard]] inline
 auto gain_param_to_lo_shelf_db(float v) -> snd::filters::gain_db {
-	return {convert::linear_to_gain_db(v)};
+	return {convert::raw_to_gain_db(v)};
 }
 
 [[nodiscard]] inline
 auto slope_param_to_filter_slope(float v) -> float {
-	return v * 2.0f;
+	return (1.0f - v) * 2.0f;
 }
 
 [[nodiscard]] inline

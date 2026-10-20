@@ -114,7 +114,7 @@ struct band_spec {
 	band_param_names short_names = BAND_PARAM_SHORT_NAMES;
 	bool enabled    = false;
 	float frequency = 1000.0f;
-	float gain      = 0.0f;
+	float gain      = 0.5f;
 	float slope     = 0.5f;
 	float bandwidth = 0.25f;
 	band_type curve = band_type::band_shelf;
@@ -249,15 +249,15 @@ auto make_audio_data(const Model& model, const blink_UniformParamData* param_dat
 	return out;
 }
 
-auto gain_stepify(float v) -> float                        { return convert::gain_db_to_linear(tweak::math::stepify<100>(convert::linear_to_gain_db(v))); }
-auto gain_constrain(float v) -> float                      { return std::clamp(v, -1.0f, 1.0f); }
-auto gain_increment(float v, bool precise) -> float        { return convert::gain_db_to_linear(tweak::increment<1, 10>(convert::linear_to_gain_db(v), precise)); };
-auto gain_decrement(float v, bool precise) -> float        { return convert::gain_db_to_linear(tweak::decrement<1, 10>(convert::linear_to_gain_db(v), precise)); };
-auto gain_drag(float v, int amount, bool precise) -> float { return convert::gain_db_to_linear(tweak::drag<float, 1, 10>(convert::linear_to_gain_db(v), amount / 5, precise)); };
+auto gain_stepify(float v) -> float                        { return convert::gain_db_to_raw(tweak::math::stepify<100>(convert::raw_to_gain_db(v))); }
+auto gain_constrain(float v) -> float                      { return std::clamp(v, 0.0f, 1.0f); }
+auto gain_increment(float v, bool precise) -> float        { return convert::gain_db_to_raw(tweak::increment<1, 10>(convert::raw_to_gain_db(v), precise)); };
+auto gain_decrement(float v, bool precise) -> float        { return convert::gain_db_to_raw(tweak::decrement<1, 10>(convert::raw_to_gain_db(v), precise)); };
+auto gain_drag(float v, int amount, bool precise) -> float { return convert::gain_db_to_raw(tweak::drag<float, 1, 10>(convert::raw_to_gain_db(v), amount / 5, precise)); };
 
 auto gain_from_string(const char* str, float* out) -> blink_Bool {
 	if (const auto gain = tweak::find_number<float>(str)) {
-		*out = convert::gain_db_to_linear(*gain);
+		*out = convert::gain_db_to_raw(*gain);
 		return {true};
 	}
 	return {false};
@@ -265,7 +265,7 @@ auto gain_from_string(const char* str, float* out) -> blink_Bool {
 
 auto gain_to_string(float v, char buffer[BLINK_STRING_MAX]) -> void {
 	auto ss = std::stringstream{};
-	ss << convert::linear_to_gain_db(v) << " dB";
+	ss << convert::raw_to_gain_db(v) << " dB";
 	blink::tweak::write_string(ss.str(), buffer);
 }
 
