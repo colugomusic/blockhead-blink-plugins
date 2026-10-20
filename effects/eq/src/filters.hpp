@@ -464,7 +464,7 @@ auto svf(svf_state state, float x, float wdiv2, float damp) -> std::tuple<svf_st
 	std::tie(BPn, BPn_zdf)              = gain(x, zdf, damp);
 	std::tie(state.integrator2, x, zdf) = integrator(state.integrator2, x, zdf, wdiv2);
 	const auto LP                       = x;
-	state.fbk = zdf + BPn_zdf;
+	state.fbk                           = (zdf + BPn_zdf) * -1.0f;
 	return std::make_tuple(state, LP, HP, BPn);
 }
 
