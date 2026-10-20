@@ -35,31 +35,59 @@ auto make_audio_data(const Model& model, const blink_UniformParamData* param_dat
 	return out;
 }
 
+auto settle(band_shelf_filter* filter, float freq, float gain01, float slope, float bw, float SR) -> void {
+	const auto coeffs = filters::shelving::band_shelf::make_coeffs(freq, gain01, slope, bw, SR);
+	for (size_t i = 0; i < SETTLE_FRAMES; i++) {
+		std::tie(filter->state, std::ignore) = filters::shelving::band_shelf::process(filter->state, 0.0f, coeffs);
+	}
+}
+
+auto settle(hi_shelf_filter* filter, float freq, float gain01, float slope, float SR) -> void {
+	const auto coeffs = filters::shelving::hi_shelf::make_coeffs(freq, gain01, slope, SR);
+	for (size_t i = 0; i < SETTLE_FRAMES; i++) {
+		std::tie(filter->state, std::ignore) = filters::shelving::hi_shelf::process(filter->state, 0.0f, coeffs);
+	}
+}
+
+auto settle(lo_shelf_filter* filter, float freq, float gain01, float slope, float SR) -> void {
+	const auto coeffs = filters::shelving::lo_shelf::make_coeffs(freq, gain01, slope, SR);
+	for (size_t i = 0; i < SETTLE_FRAMES; i++) {
+		std::tie(filter->state, std::ignore) = filters::shelving::lo_shelf::process(filter->state, 0.0f, coeffs);
+	}
+}
+
 [[nodiscard]]
-auto process(filters::shelving::band_shelf::state* band, ml::DSPVector signal, ml::DSPVector freq, ml::DSPVector gain01, ml::DSPVector slope, ml::DSPVector bw, float SR) -> ml::DSPVector {
+auto process(band_shelf_filter* filter, ml::DSPVector signal, ml::DSPVector freq, ml::DSPVector gain01, ml::DSPVector slope, ml::DSPVector bw, float SR) -> ml::DSPVector {
+	if (!filter->init) {
+		settle(filter, freq[0], gain01[0], slope[0], bw[0], SR);
+	}
 	for (int i = 0; i < kFloatsPerDSPVector; i++) {
 		auto coeffs = filters::shelving::band_shelf::make_coeffs(freq[i], gain01[i], slope[i], bw[i], SR);
-		std::tie(*band, signal[i]) = filters::shelving::band_shelf::process(*band, signal[i], coeffs);
+		std::tie(filter->state, signal[i]) = filters::shelving::band_shelf::process(filter->state, signal[i], coeffs);
 	}
-	auto test_coeffs = filters::shelving::band_shelf::make_coeffs(freq[0], gain01[0], slope[0], bw[0], 44100.0f);
-	auto test0 = filters::shelving::band_shelf::process({}, 0.5f, test_coeffs);
 	return signal;
 }
 
 [[nodiscard]]
-auto process(filters::shelving::hi_shelf::state* band, ml::DSPVector signal, ml::DSPVector freq, ml::DSPVector gain01, ml::DSPVector slope, float SR) -> ml::DSPVector {
+auto process(hi_shelf_filter* filter, ml::DSPVector signal, ml::DSPVector freq, ml::DSPVector gain01, ml::DSPVector slope, float SR) -> ml::DSPVector {
+	if (!filter->init) {
+		settle(filter, freq[0], gain01[0], slope[0], SR);
+	}
 	for (int i = 0; i < kFloatsPerDSPVector; i++) {
 		auto coeffs = filters::shelving::hi_shelf::make_coeffs(freq[i], gain01[i], slope[i], SR);
-		std::tie(*band, signal[i]) = filters::shelving::hi_shelf::process(*band, signal[i], coeffs);
+		std::tie(filter->state, signal[i]) = filters::shelving::hi_shelf::process(filter->state, signal[i], coeffs);
 	}
 	return signal;
 }
 
 [[nodiscard]]
-auto process(filters::shelving::lo_shelf::state* band, ml::DSPVector signal, ml::DSPVector freq, ml::DSPVector gain01, ml::DSPVector slope, float SR) -> ml::DSPVector {
+auto process(lo_shelf_filter* filter, ml::DSPVector signal, ml::DSPVector freq, ml::DSPVector gain01, ml::DSPVector slope, float SR) -> ml::DSPVector {
+	if (!filter->init) {
+		settle(filter, freq[0], gain01[0], slope[0], SR);
+	}
 	for (int i = 0; i < kFloatsPerDSPVector; i++) {
 		auto coeffs = filters::shelving::lo_shelf::make_coeffs(freq[i], gain01[i], slope[i], SR);
-		std::tie(*band, signal[i]) = filters::shelving::lo_shelf::process(*band, signal[i], coeffs);
+		std::tie(filter->state, signal[i]) = filters::shelving::lo_shelf::process(filter->state, signal[i], coeffs);
 	}
 	return signal;
 }

@@ -8,6 +8,7 @@ namespace eq {
 
 static inline constexpr auto BAND_COUNT    = 8;
 static inline constexpr auto CHANNEL_COUNT = 2;
+static inline constexpr auto SETTLE_FRAMES = 4;
 
 struct Params {
 	struct {
@@ -22,10 +23,29 @@ struct Params {
 	} slider;
 };
 
+struct band_shelf_filter {
+	// Blockhead likes to rudely and suddenly start throwing audio at filters
+	// without giving them a chance to settle first which can cause glitches at
+	// extreme parameter values so we set these flags to true after a reset and
+	// then give the filters a chance to settle the first time they are used.
+	bool init = false;
+	filters::shelving::band_shelf::state state;
+};
+
+struct hi_shelf_filter {
+	bool init = false;
+	filters::shelving::hi_shelf::state state;
+};
+
+struct lo_shelf_filter {
+	bool init = false;
+	filters::shelving::lo_shelf::state state;
+};
+
 struct band_dsp {
-	filters::shelving::band_shelf::state band_shelf;
-	filters::shelving::hi_shelf::state hi_shelf;
-	filters::shelving::lo_shelf::state lo_shelf;
+	band_shelf_filter band_shelf;
+	hi_shelf_filter hi_shelf;
+	lo_shelf_filter lo_shelf;
 };
 
 struct channel_dsp {
@@ -33,6 +53,7 @@ struct channel_dsp {
 };
 
 struct UnitDSP {
+	bool filter_init = false;
 	blink_SR SR;
 	blink::BlockPositions block_positions;
 	std::array<channel_dsp, CHANNEL_COUNT> channels;

@@ -10,7 +10,7 @@
 
 namespace eq::filters {
 
-constexpr auto GAIN_MAX = 12.0f;
+constexpr auto GAIN_MAX    = 12.0f;
 
 [[nodiscard]]
 auto reciprocal(float v) -> float {
