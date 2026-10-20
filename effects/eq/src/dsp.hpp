@@ -1,6 +1,7 @@
 #pragma once
 
-#include "curve-type.hpp"
+#include "band-type.hpp"
+#include "effects/eq/src/filters.hpp"
 #include "model.h"
 #include <blink/search.hpp>
 #include <DSP/MLDSPFunctional.h>
@@ -36,21 +37,27 @@ auto make_audio_data(const Model& model, const blink_UniformParamData* param_dat
 }
 
 auto settle(band_shelf_filter* filter, float freq, float gain01, float slope, float bw, float SR) -> void {
-	const auto coeffs = filters::shelving::band_shelf::make_coeffs(freq, gain01, slope, bw, SR);
-	filter->state     = filters::shelving::band_shelf::settle(filter->state, coeffs);
-	filter->settled   = true;
+	const auto coeffs  = filters::make_coeffs_for_band_shelf(freq, gain01, slope, bw, SR);
+	filter->state      = snd::filters::shelving::band_shelf::settle(filter->state, coeffs);
+	filter->settled    = true;
+}
+
+auto settle(band_pass_filter* filter, float freq, float gain01, float slope, float bw, float SR) -> void {
+	const auto coeffs  = filters::make_coeffs_for_band_pass(freq, gain01, slope, bw, SR);
+	filter->state      = snd::filters::shelving::band_pass::settle(filter->state, coeffs);
+	filter->settled    = true;
 }
 
 auto settle(hi_shelf_filter* filter, float freq, float gain01, float slope, float SR) -> void {
-	const auto coeffs = filters::shelving::hi_shelf::make_coeffs(freq, gain01, slope, SR);
-	filter->state     = filters::shelving::hi_shelf::settle(filter->state, coeffs);
-	filter->settled   = true;
+	const auto coeffs  = filters::make_coeffs_for_hi_shelf(freq, gain01, slope, SR);
+	filter->state      = snd::filters::shelving::hi_shelf::settle(filter->state, coeffs);
+	filter->settled    = true;
 }
 
 auto settle(lo_shelf_filter* filter, float freq, float gain01, float slope, float SR) -> void {
-	const auto coeffs = filters::shelving::lo_shelf::make_coeffs(freq, gain01, slope, SR);
-	filter->state     = filters::shelving::lo_shelf::settle(filter->state, coeffs);
-	filter->settled   = true;
+	const auto coeffs  = filters::make_coeffs_for_lo_shelf(freq, gain01, slope, SR);
+	filter->state      = snd::filters::shelving::lo_shelf::settle(filter->state, coeffs);
+	filter->settled    = true;
 }
 
 [[nodiscard]]
@@ -59,8 +66,20 @@ auto process(band_shelf_filter* filter, ml::DSPVector signal, ml::DSPVector freq
 		settle(filter, freq[0], gain01[0], slope[0], bw[0], SR);
 	}
 	for (int i = 0; i < kFloatsPerDSPVector; i++) {
-		auto coeffs = filters::shelving::band_shelf::make_coeffs(freq[i], gain01[i], slope[i], bw[i], SR);
-		std::tie(filter->state, signal[i]) = filters::shelving::band_shelf::process(filter->state, signal[i], coeffs);
+		const auto coeffs = filters::make_coeffs_for_band_shelf(freq[i], gain01[i], slope[i], bw[i], SR);
+		std::tie(filter->state, signal[i]) = snd::filters::shelving::band_shelf::process(filter->state, signal[i], coeffs);
+	}
+	return signal;
+}
+
+[[nodiscard]]
+auto process(band_pass_filter* filter, ml::DSPVector signal, ml::DSPVector freq, ml::DSPVector gain01, ml::DSPVector slope, ml::DSPVector bw, float SR) -> ml::DSPVector {
+	if (!filter->settled) {
+		settle(filter, freq[0], gain01[0], slope[0], bw[0], SR);
+	}
+	for (int i = 0; i < kFloatsPerDSPVector; i++) {
+		const auto coeffs = filters::make_coeffs_for_band_pass(freq[i], gain01[i], slope[i], bw[i], SR);
+		std::tie(filter->state, signal[i]) = snd::filters::shelving::band_pass::process(filter->state, signal[i], coeffs);
 	}
 	return signal;
 }
@@ -71,8 +90,8 @@ auto process(hi_shelf_filter* filter, ml::DSPVector signal, ml::DSPVector freq, 
 		settle(filter, freq[0], gain01[0], slope[0], SR);
 	}
 	for (int i = 0; i < kFloatsPerDSPVector; i++) {
-		auto coeffs = filters::shelving::hi_shelf::make_coeffs(freq[i], gain01[i], slope[i], SR);
-		std::tie(filter->state, signal[i]) = filters::shelving::hi_shelf::process(filter->state, signal[i], coeffs);
+		const auto coeffs = filters::make_coeffs_for_hi_shelf(freq[i], gain01[i], slope[i], SR);
+		std::tie(filter->state, signal[i]) = snd::filters::shelving::hi_shelf::process(filter->state, signal[i], coeffs);
 	}
 	return signal;
 }
@@ -83,8 +102,8 @@ auto process(lo_shelf_filter* filter, ml::DSPVector signal, ml::DSPVector freq, 
 		settle(filter, freq[0], gain01[0], slope[0], SR);
 	}
 	for (int i = 0; i < kFloatsPerDSPVector; i++) {
-		auto coeffs = filters::shelving::lo_shelf::make_coeffs(freq[i], gain01[i], slope[i], SR);
-		std::tie(filter->state, signal[i]) = filters::shelving::lo_shelf::process(filter->state, signal[i], coeffs);
+		const auto coeffs = filters::make_coeffs_for_lo_shelf(freq[i], gain01[i], slope[i], SR);
+		std::tie(filter->state, signal[i]) = snd::filters::shelving::lo_shelf::process(filter->state, signal[i], coeffs);
 	}
 	return signal;
 }
@@ -100,15 +119,16 @@ auto process(Model* model, UnitDSP* unit_dsp, const blink_VaryingData& varying, 
 		for (size_t i = 0; i < BAND_COUNT; i++) {
 			const auto on = data.option.band_on[i].value > 0;
 			if (on) {
-				const auto freq  = blink::math::convert::linear_to_filter_hz(data.slider.band_freq[i].value);
+				const auto type  = static_cast<band_type>(data.option.band_curve[i].value);
+				const auto freq  = data.slider.band_freq[i].value;
 				const auto gain  = data.slider.band_gain[i].value;
-				const auto slope = data.slider.band_slope[i].value * 2.0f;
-				const auto bw    = std::lerp(0.2, 4.0f, data.slider.band_bandwidth[i].value);
-				const auto type  = static_cast<curve_type>(data.option.band_curve[i].value);
+				const auto slope = data.slider.band_slope[i].value;
+				const auto bw    = data.slider.band_bandwidth[i].value;
 				switch (type) {
-					case curve_type::band_shelf: { signal.row(ch) = process(&channel.bands[i].band_shelf, signal.constRow(ch), freq, gain, slope, bw, SRf); break; }
-					case curve_type::hi_shelf:   { signal.row(ch) = process(&channel.bands[i].hi_shelf, signal.constRow(ch), freq, gain, slope, SRf); break; }
-					case curve_type::lo_shelf:   { signal.row(ch) = process(&channel.bands[i].lo_shelf, signal.constRow(ch), freq, gain, slope, SRf); break; }
+					case band_type::band_shelf: { signal.row(ch) = process(&channel.bands[i].band_shelf, signal.constRow(ch), freq, gain, slope, bw, SRf); break; }
+					case band_type::band_pass:  { signal.row(ch) = process(&channel.bands[i].band_pass, signal.constRow(ch), freq, gain, slope, bw, SRf); break; }
+					case band_type::hi_shelf:   { signal.row(ch) = process(&channel.bands[i].hi_shelf, signal.constRow(ch), freq, gain, slope, SRf); break; }
+					case band_type::lo_shelf:   { signal.row(ch) = process(&channel.bands[i].lo_shelf, signal.constRow(ch), freq, gain, slope, SRf); break; }
 					default:                     { break; }
 				}
 			}

@@ -4,7 +4,8 @@
 #	define _USE_MATH_DEFINES
 #endif
 
-#include "curve-type.hpp"
+#include "convert.hpp"
+#include "band-type.hpp"
 #include "dsp.hpp"
 #include "filters.hpp"
 #include "model.h"
@@ -116,7 +117,7 @@ struct band_spec {
 	float gain      = 0.0f;
 	float slope     = 0.5f;
 	float bandwidth = 0.25f;
-	curve_type curve = curve_type::band_shelf;
+	band_type curve = band_type::band_shelf;
 };
 
 static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
@@ -132,7 +133,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		.enabled   = false,
 		.frequency = blink::math::convert::filter_hz_to_linear(50.0f),
 		.gain      = 0.0f,
-		.curve     = curve_type::lo_shelf,
+		.curve     = band_type::lo_shelf,
 	},
 	band_spec{
 		.names = {
@@ -155,6 +156,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 3 Bandwidth",
 			.curve     = "Band 3 Type"
 		},
+		.enabled   = true,
 		.frequency = blink::math::convert::filter_hz_to_linear(200.0f),
 	},
 	band_spec{
@@ -168,7 +170,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		},
 		.enabled   = false,
 		.frequency = blink::math::convert::filter_hz_to_linear(400.0f),
-		.curve     = curve_type::band_shelf,
+		.curve     = band_type::band_shelf,
 	},
 	band_spec{
 		.names = {
@@ -179,6 +181,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 5 Bandwidth",
 			.curve     = "Band 5 Type"
 		},
+		.enabled   = true,
 		.frequency = blink::math::convert::filter_hz_to_linear(600.0f),
 	},
 	band_spec{
@@ -190,6 +193,7 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 6 Bandwidth",
 			.curve     = "Band 6 Type"
 		},
+		.enabled   = true,
 		.frequency = blink::math::convert::filter_hz_to_linear(1000.0f),
 	},
 	band_spec{
@@ -203,7 +207,6 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 		},
 		.enabled   = false,
 		.frequency = blink::math::convert::filter_hz_to_linear(2000.0f),
-		.curve     = curve_type::hi_shelf
 	},
 	band_spec{
 		.names = {
@@ -214,9 +217,8 @@ static const auto BAND_SPECS = std::array<band_spec, BAND_COUNT>{
 			.bandwidth = "Band 8 Bandwidth",
 			.curve     = "Band 8 Type"
 		},
-		.enabled   = true,
+		.enabled   = false,
 		.frequency = blink::math::convert::filter_hz_to_linear(600.0f),
-		.bandwidth = 1.0f,
 	},
 };
 
@@ -247,15 +249,15 @@ auto make_audio_data(const Model& model, const blink_UniformParamData* param_dat
 	return out;
 }
 
-auto gain_stepify(float v) -> float                        { return filters::gain_db_to_linear(tweak::math::stepify<100>(filters::linear_to_gain_db(v))); }
+auto gain_stepify(float v) -> float                        { return convert::gain_db_to_linear(tweak::math::stepify<100>(convert::linear_to_gain_db(v))); }
 auto gain_constrain(float v) -> float                      { return std::clamp(v, -1.0f, 1.0f); }
-auto gain_increment(float v, bool precise) -> float        { return filters::gain_db_to_linear(tweak::increment<1, 10>(filters::linear_to_gain_db(v), precise)); };
-auto gain_decrement(float v, bool precise) -> float        { return filters::gain_db_to_linear(tweak::decrement<1, 10>(filters::linear_to_gain_db(v), precise)); };
-auto gain_drag(float v, int amount, bool precise) -> float { return filters::gain_db_to_linear(tweak::drag<float, 1, 10>(filters::linear_to_gain_db(v), amount / 5, precise)); };
+auto gain_increment(float v, bool precise) -> float        { return convert::gain_db_to_linear(tweak::increment<1, 10>(convert::linear_to_gain_db(v), precise)); };
+auto gain_decrement(float v, bool precise) -> float        { return convert::gain_db_to_linear(tweak::decrement<1, 10>(convert::linear_to_gain_db(v), precise)); };
+auto gain_drag(float v, int amount, bool precise) -> float { return convert::gain_db_to_linear(tweak::drag<float, 1, 10>(convert::linear_to_gain_db(v), amount / 5, precise)); };
 
 auto gain_from_string(const char* str, float* out) -> blink_Bool {
 	if (const auto gain = tweak::find_number<float>(str)) {
-		*out = filters::gain_db_to_linear(*gain);
+		*out = convert::gain_db_to_linear(*gain);
 		return {true};
 	}
 	return {false};
@@ -263,7 +265,7 @@ auto gain_from_string(const char* str, float* out) -> blink_Bool {
 
 auto gain_to_string(float v, char buffer[BLINK_STRING_MAX]) -> void {
 	auto ss = std::stringstream{};
-	ss << filters::linear_to_gain_db(v) << " dB";
+	ss << convert::linear_to_gain_db(v) << " dB";
 	blink::tweak::write_string(ss.str(), buffer);
 }
 
@@ -348,7 +350,7 @@ auto add_band_curve_option_param(const blink::Plugin& plugin, blink_UUID uuid, c
 	blink::write::param::name(plugin, param_idx, {spec.names.curve.data()});
 	blink::write::param::short_name(plugin, param_idx, {spec.short_names.curve.data()});
 	blink::write::param::add_flags(plugin, param_idx, flags);
-	blink::write::param::strings(plugin, param_idx, {{"Band Shelf", "High Shelf", "Low Shelf"}});
+	blink::write::param::strings(plugin, param_idx, {{"Band Shelf", "Band Pass", "High Shelf", "Low Shelf"}});
 	blink::write::param::option_default_value(plugin, param_idx, static_cast<int64_t>(spec.curve));
 	return param_idx;
 }
@@ -403,25 +405,11 @@ auto add_band_curve_params(const blink::Plugin& plugin) -> std::array<blink_Para
 	return add_band_params(plugin, fn_add);
 }
 
-[[nodiscard]]
-auto frequency_response(const std::monostate&, float) -> float {
-	return 1.0f;
-}
-
-[[nodiscard]]
-auto frequency_response(const filters::shelving::band_shelf::coeffs& coeffs, float hz) -> float {
-	return filters::shelving::band_shelf::tf::compute(coeffs, hz);
-}
-
-[[nodiscard]]
-auto frequency_response(const filters::shelving::hi_shelf::coeffs& coeffs, float hz) -> float {
-	return filters::shelving::hi_shelf::tf::compute(coeffs, hz);
-}
-
-[[nodiscard]]
-auto frequency_response(const filters::shelving::lo_shelf::coeffs& coeffs, float hz) -> float {
-	return filters::shelving::lo_shelf::tf::compute(coeffs, hz);
-}
+[[nodiscard]] auto frequency_response(const std::monostate&, float) -> float                                       { return 1.0f; }
+[[nodiscard]] auto frequency_response(const snd::filters::shelving::band_shelf::coeffs& coeffs, float hz) -> float { return snd::filters::shelving::band_shelf::tf::compute(coeffs, hz); }
+[[nodiscard]] auto frequency_response(const snd::filters::shelving::band_pass::coeffs& coeffs, float hz) -> float  { return snd::filters::shelving::band_pass::tf::compute(coeffs, hz); }
+[[nodiscard]] auto frequency_response(const snd::filters::shelving::hi_shelf::coeffs& coeffs, float hz) -> float   { return snd::filters::shelving::hi_shelf::tf::compute(coeffs, hz); }
+[[nodiscard]] auto frequency_response(const snd::filters::shelving::lo_shelf::coeffs& coeffs, float hz) -> float   { return snd::filters::shelving::lo_shelf::tf::compute(coeffs, hz); }
 
 [[nodiscard]]
 auto frequency_response(const eq::fr_data& data, float x) -> float {
@@ -431,14 +419,15 @@ auto frequency_response(const eq::fr_data& data, float x) -> float {
 	for (size_t i = 0; i < BAND_COUNT; i++) {
 		y *= std::visit(visitor, data.bands[i].coeffs);
 	}
-	return blink::math::convert::linear_to_db(y) / filters::GAIN_MAX;
+	return blink::math::convert::linear_to_db(y) / convert::GAIN_MAX / 2;
 }
 
 [[nodiscard]]
-auto has_bandwidth(curve_type curve) -> bool {
+auto has_bandwidth(band_type curve) -> bool {
 	switch (curve) {
-		case curve_type::band_shelf: { return true; }
-		default:                     { return false; }
+		case band_type::band_shelf: { return true; }
+		case band_type::band_pass:  { return true; }
+		default:                    { return false; }
 	}
 }
 
@@ -521,15 +510,16 @@ auto blink_get_frequency_response_data(const blink_UniformParamData* param_data,
 	const auto audio_data = make_audio_data(model, param_data);
 	for (size_t i = 0; i < BAND_COUNT; i++) {
 		if (audio_data.option.band_on[i].value > 0) {
-			const auto f     = blink::math::convert::linear_to_filter_hz(audio_data.slider.band_freq[i].value);
+			const auto type  = static_cast<band_type>(audio_data.option.band_curve[i].value);
+			const auto freq  = audio_data.slider.band_freq[i].value;
 			const auto gain  = audio_data.slider.band_gain[i].value;
-			const auto slope = audio_data.slider.band_slope[i].value * 2.0f;
-			const auto bw    = std::lerp(0.2f, 4.0f, audio_data.slider.band_bandwidth[i].value);
-			const auto type  = static_cast<curve_type>(audio_data.option.band_curve[i].value);
+			const auto slope = audio_data.slider.band_slope[i].value;
+			const auto bw    = audio_data.slider.band_bandwidth[i].value;
 			switch (type) {
-				case curve_type::band_shelf: { model.fr_data.bands[i].coeffs = filters::shelving::band_shelf::make_coeffs(f, gain, slope, bw, 44100.0f); break; }
-				case curve_type::hi_shelf:   { model.fr_data.bands[i].coeffs = filters::shelving::hi_shelf::make_coeffs(f, gain, slope, 44100.0f); break; }
-				case curve_type::lo_shelf:   { model.fr_data.bands[i].coeffs = filters::shelving::lo_shelf::make_coeffs(f, gain, slope, 44100.0f); break; }
+				case band_type::band_shelf: { model.fr_data.bands[i].coeffs = filters::make_coeffs_for_band_shelf(freq, gain, slope, bw, 44100.0f); break; }
+				case band_type::band_pass:  { model.fr_data.bands[i].coeffs = filters::make_coeffs_for_band_pass(freq, gain, slope, bw, 44100.0f); break; }
+				case band_type::hi_shelf:   { model.fr_data.bands[i].coeffs = filters::make_coeffs_for_hi_shelf(freq, gain, slope, 44100.0f); break; }
+				case band_type::lo_shelf:   { model.fr_data.bands[i].coeffs = filters::make_coeffs_for_lo_shelf(freq, gain, slope, 44100.0f); break; }
 			}
 		}
 		else {
@@ -572,15 +562,29 @@ auto blink_get_param_settings(const blink_UniformParamData* param_data, blink_Pa
 	const auto audio_data = make_audio_data(model, param_data);
 	model.param_settings   = {};
 	model.param_settings_c = {};
-	model.param_settings.fr_info.enabled               = model.params.option.band_on;
-	model.param_settings.fr_info.frequency             = model.params.slider.band_freq;
-	model.param_settings.fr_info.mb_left_vertical      = model.params.slider.band_gain;
-	model.param_settings.fr_info.mb_left_vertical_ctrl = model.params.slider.band_slope;
+	model.param_settings.fr_info.enabled   = model.params.option.band_on;
+	model.param_settings.fr_info.frequency = model.params.slider.band_freq;
 	for (size_t i = 0; i < BAND_COUNT; i++) {
-		const auto curve = static_cast<curve_type>(audio_data.option.band_curve[i].value);
-		if (has_bandwidth(curve)) {
-			model.param_settings.visible_params.push_back(model.params.slider.band_bandwidth[i]);
-			model.param_settings.fr_info.extra_params[i].push_back(model.params.slider.band_bandwidth[i]);
+		const auto type = static_cast<band_type>(audio_data.option.band_curve[i].value);
+		switch (type) {
+			case band_type::band_shelf: {
+				model.param_settings.visible_params.push_back(model.params.slider.band_bandwidth[i]);
+				model.param_settings.fr_info.extra_params[i].push_back(model.params.slider.band_bandwidth[i]);
+				model.param_settings.fr_info.mb_left_vertical[i]      = model.params.slider.band_gain[i];
+				model.param_settings.fr_info.mb_left_vertical_ctrl[i] = model.params.slider.band_slope[i];
+				break;
+			}
+			case band_type::band_pass: {
+				model.param_settings.visible_params.push_back(model.params.slider.band_bandwidth[i]);
+				model.param_settings.fr_info.mb_left_vertical[i]      = model.params.slider.band_slope[i];
+				model.param_settings.fr_info.mb_left_vertical_ctrl[i] = model.params.slider.band_bandwidth[i];
+				break;
+			}
+			default: {
+				model.param_settings.fr_info.mb_left_vertical[i]      = model.params.slider.band_gain[i];
+				model.param_settings.fr_info.mb_left_vertical_ctrl[i] = model.params.slider.band_slope[i];
+				break;
+			}
 		}
 		model.param_settings.fr_info.extra_params[i].push_back(model.params.option.band_curve[i]);
 		model.param_settings.visible_params.push_back(model.params.option.band_on[i]);

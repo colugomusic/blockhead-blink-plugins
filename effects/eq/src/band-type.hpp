@@ -2,8 +2,9 @@
 
 namespace eq {
 
-enum struct curve_type {
+enum struct band_type {
 	band_shelf,
+	band_pass,
 	hi_shelf,
 	lo_shelf
 };

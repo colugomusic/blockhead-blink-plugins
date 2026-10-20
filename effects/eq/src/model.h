@@ -28,21 +28,27 @@ struct band_shelf_filter {
 	// extreme parameter values so we set these flags to true after a reset and
 	// then give the filters a chance to settle the first time they are used.
 	bool settled = false;
-	filters::shelving::band_shelf::state state;
+	snd::filters::shelving::band_shelf::state state;
+};
+
+struct band_pass_filter {
+	bool settled = false;
+	snd::filters::shelving::band_pass::state state;
 };
 
 struct hi_shelf_filter {
 	bool settled = false;
-	filters::shelving::hi_shelf::state state;
+	snd::filters::shelving::hi_shelf::state state;
 };
 
 struct lo_shelf_filter {
 	bool settled = false;
-	filters::shelving::lo_shelf::state state;
+	snd::filters::shelving::lo_shelf::state state;
 };
 
 struct band_dsp {
 	band_shelf_filter band_shelf;
+	band_pass_filter band_pass;
 	hi_shelf_filter hi_shelf;
 	lo_shelf_filter lo_shelf;
 };
@@ -62,9 +68,10 @@ using Unit     = blink::Unit<UnitDSP>;
 
 using fr_filter_coeffs_var = std::variant<
 	std::monostate,
-	filters::shelving::band_shelf::coeffs,
-	filters::shelving::hi_shelf::coeffs,
-	filters::shelving::lo_shelf::coeffs
+	snd::filters::shelving::band_shelf::coeffs,
+	snd::filters::shelving::band_pass::coeffs,
+	snd::filters::shelving::hi_shelf::coeffs,
+	snd::filters::shelving::lo_shelf::coeffs
 >;
 
 struct fr_band_data {

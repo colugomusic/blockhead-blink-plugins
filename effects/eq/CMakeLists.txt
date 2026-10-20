@@ -5,7 +5,7 @@ find_package(blink-plugin REQUIRED CONFIG)
 
 list(APPEND SRC
 	./src/complex.hpp
-	./src/curve-type.hpp
+	./src/band-type.hpp
 	./src/dsp.hpp
 	./src/filters.hpp
 	./src/model.h
