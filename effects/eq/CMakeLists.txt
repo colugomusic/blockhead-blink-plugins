@@ -4,7 +4,6 @@ project(blockhead-blink-plugins-effect-eq VERSION 0.1.0)
 find_package(blink-plugin REQUIRED CONFIG)
 
 list(APPEND SRC
-	./src/complex.hpp
 	./src/band-type.hpp
 	./src/dsp.hpp
 	./src/filters.hpp
