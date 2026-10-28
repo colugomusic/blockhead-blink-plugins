@@ -290,7 +290,10 @@ auto add_gain_slider(const blink::Plugin& plugin, float default_value) -> blink_
 
 auto add_band_on_option_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::option(plugin, uuid);
-	const auto flags      = blink_ParamFlags_IsToggle | blink_ParamFlags_MovesDisplay | blink_ParamFlags_FrequencyResponseBandParam;
+	const auto flags =
+		blink_ParamFlags_IsToggle |
+		blink_ParamFlags_MovesDisplay |
+		blink_ParamFlags_FrequencyResponseBandParam;
 	blink::write::param::name(plugin, param_idx, {spec.names.on.data()});
 	blink::write::param::short_name(plugin, param_idx, {spec.short_names.on.data()});
 	blink::write::param::option_default_value(plugin, param_idx, spec.enabled ? 1 : 0);
@@ -301,7 +304,10 @@ auto add_band_on_option_param(const blink::Plugin& plugin, blink_UUID uuid, cons
 auto add_band_freq_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
 	const auto slider_idx = blink::add::slider::filter_frequency(plugin.host, spec.frequency);
-	const auto flags      = blink_ParamFlags_MovesDisplay | blink_ParamFlags_FrequencyResponseBandParam;
+	const auto flags =
+		blink_ParamFlags_CanManipulate |
+		blink_ParamFlags_MovesDisplay |
+		blink_ParamFlags_FrequencyResponseBandParam;
 	blink::write::param::slider(plugin, param_idx, slider_idx);
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	blink::write::param::name(plugin, param_idx, {spec.names.freq.data()});
@@ -312,7 +318,10 @@ auto add_band_freq_slider_param(const blink::Plugin& plugin, blink_UUID uuid, co
 auto add_band_gain_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
     const auto slider_idx = add_gain_slider(plugin, spec.gain);
-	const auto flags      = blink_ParamFlags_MovesDisplay | blink_ParamFlags_FrequencyResponseBandParam;
+	const auto flags =
+		blink_ParamFlags_CanManipulate |
+		blink_ParamFlags_MovesDisplay |
+		blink_ParamFlags_FrequencyResponseBandParam;
     blink::write::param::slider(plugin, param_idx, slider_idx);
 	blink::write::param::name(plugin, param_idx, {spec.names.gain.data()});
 	blink::write::param::short_name(plugin, param_idx, {spec.short_names.gain.data()});
@@ -323,7 +332,10 @@ auto add_band_gain_slider_param(const blink::Plugin& plugin, blink_UUID uuid, co
 auto add_band_slope_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
 	const auto slider_idx = blink::add::slider::percentage(plugin.host);
-	const auto flags      = blink_ParamFlags_MovesDisplay | blink_ParamFlags_FrequencyResponseBandParam;
+	const auto flags =
+		blink_ParamFlags_CanManipulate |
+		blink_ParamFlags_MovesDisplay |
+		blink_ParamFlags_FrequencyResponseBandParam;
 	blink::write::slider::default_value(plugin, slider_idx, spec.slope);
 	blink::write::param::slider(plugin, param_idx, slider_idx);
 	blink::write::param::name(plugin, param_idx, {spec.names.slope.data()});
@@ -335,7 +347,10 @@ auto add_band_slope_slider_param(const blink::Plugin& plugin, blink_UUID uuid, c
 auto add_band_bandwidth_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
 	const auto slider_idx = blink::add::slider::percentage(plugin.host);
-	const auto flags      = blink_ParamFlags_MovesDisplay | blink_ParamFlags_FrequencyResponseBandParam;
+	const auto flags =
+		blink_ParamFlags_CanManipulate |
+		blink_ParamFlags_MovesDisplay |
+		blink_ParamFlags_FrequencyResponseBandParam;
 	blink::write::slider::default_value(plugin, slider_idx, spec.bandwidth);
 	blink::write::param::slider(plugin, param_idx, slider_idx);
 	blink::write::param::name(plugin, param_idx, {spec.names.bandwidth.data()});

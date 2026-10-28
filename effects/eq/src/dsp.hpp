@@ -119,6 +119,7 @@ auto process(Model* model, UnitDSP* unit_dsp, const blink_VaryingData& varying, 
 		for (size_t i = 0; i < BAND_COUNT; i++) {
 			const auto on = data.option.band_on[i].value > 0;
 			if (on) {
+				// @TODO: do env search for manipulatable sliders.
 				const auto type  = static_cast<band_type>(data.option.band_curve[i].value);
 				const auto freq  = data.slider.band_freq[i].value;
 				const auto gain  = data.slider.band_gain[i].value;
