@@ -302,8 +302,10 @@ auto add_band_on_option_param(const blink::Plugin& plugin, blink_UUID uuid, cons
 }
 
 auto add_band_freq_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
-	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
-	const auto slider_idx = blink::add::slider::filter_frequency(plugin.host, spec.frequency);
+	const auto param_idx        = blink::add::param::slider_real(plugin, uuid);
+	const auto slider_idx       = blink::add::slider::filter_frequency(plugin.host, spec.frequency);
+	const auto env_offset_idx   = blink::add::env::percentage_bipolar(plugin.host);
+	const auto env_override_idx = blink::add::env::filter_frequency(plugin.host, spec.frequency);
 	const auto flags =
 		blink_ParamFlags_CanManipulate |
 		blink_ParamFlags_MovesDisplay |
@@ -312,6 +314,8 @@ auto add_band_freq_slider_param(const blink::Plugin& plugin, blink_UUID uuid, co
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	blink::write::param::name(plugin, param_idx, {spec.names.freq.data()});
 	blink::write::param::short_name(plugin, param_idx, {spec.short_names.freq.data()});
+	blink::write::param::offset_env(plugin, param_idx, env_offset_idx);
+	blink::write::param::override_env(plugin, param_idx, env_override_idx);
 	return param_idx;
 }
 
