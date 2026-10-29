@@ -140,8 +140,8 @@ auto fricative_intensity(const blink::Plugin& plugin) -> blink_ParamIdx {
 	blink::write::param::short_name(plugin, param_idx, {"Intensity"});
 	blink::write::param::group(plugin, param_idx, {"Fricatives"});
 	blink::write::param::env(plugin, param_idx, env_idx);
-	blink::write::param::offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
-	blink::write::param::override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
 	blink::write::param::clamp_range(plugin, param_idx, {0.0f, 1.0f});
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	return param_idx;
@@ -156,8 +156,8 @@ auto throat_diameter(const blink::Plugin& plugin) -> blink_ParamIdx {
 	blink::write::param::group(plugin, param_idx, {"Throat"});
 	blink::write::param::clamp_range(plugin, param_idx, {0.0f, 1.0f});
 	blink::write::param::env(plugin, param_idx, env_idx);
-	blink::write::param::offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
-	blink::write::param::override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	return param_idx;
 }
@@ -172,8 +172,8 @@ auto throat_position(const blink::Plugin& plugin) -> blink_ParamIdx {
 	blink::write::param::clamp_range(plugin, param_idx, {-1.0f, 1.0f});
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	blink::write::param::env(plugin, param_idx, env_idx);
-	blink::write::param::offset_env(plugin, param_idx, env_idx);
-	blink::write::param::override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_offset_env(plugin, param_idx, env_idx);
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
 	return param_idx;
 }
 
@@ -187,8 +187,8 @@ auto tongue_diameter(const blink::Plugin& plugin) -> blink_ParamIdx {
 	blink::write::param::clamp_range(plugin, param_idx, {0.0f, 1.0f});
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	blink::write::param::env(plugin, param_idx, env_idx);
-	blink::write::param::offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
-	blink::write::param::override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
 	return param_idx;
 }
 
@@ -202,8 +202,8 @@ auto tongue_position(const blink::Plugin& plugin) -> blink_ParamIdx {
 	blink::write::param::clamp_range(plugin, param_idx, {-1.0f, 1.0f});
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	blink::write::param::env(plugin, param_idx, env_idx);
-	blink::write::param::offset_env(plugin, param_idx, env_idx);
-	blink::write::param::override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_offset_env(plugin, param_idx, env_idx);
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
 	return param_idx;
 }
 
@@ -216,8 +216,8 @@ auto quality(const blink::Plugin& plugin) -> blink_ParamIdx {
 		"When adjusted, the vocal tract model is run at a lower or higher sample rate "
 		"(from 50% to 200%) which affects the perceived formant. A higher value uses more CPU."});
 	blink::write::param::env(plugin, param_idx, env_idx);
-	blink::write::param::offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
-	blink::write::param::override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
 	blink::write::param::clamp_range(plugin, param_idx, {0.0f, 2.0f});
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	blink::write::param::apply_offset_fn(plugin, param_idx, [](float value, float offset) { return value + (offset * 2); });

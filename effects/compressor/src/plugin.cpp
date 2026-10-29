@@ -296,7 +296,7 @@ auto add_param_env_attack(const blink::Plugin& plugin) -> blink_ParamIdx {
 	blink::write::param::name(plugin, param_idx, {"Attack"});
 	blink::write::param::env(plugin, param_idx, env_idx);
 	blink::write::param::add_flags(plugin, param_idx, flags);
-	blink::write::param::override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
 	return param_idx;
 }
 
@@ -308,7 +308,7 @@ auto add_param_env_release(const blink::Plugin& plugin) -> blink_ParamIdx {
 	blink::write::param::name(plugin, param_idx, {"Release"});
 	blink::write::param::env(plugin, param_idx, env_idx);
 	blink::write::param::add_flags(plugin, param_idx, flags);
-	blink::write::param::override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
 	return param_idx;
 }
 
@@ -319,7 +319,7 @@ auto add_param_env_threshold(const blink::Plugin& plugin) -> blink_ParamIdx {
 	const auto flags     = blink_ParamFlags_DefaultActive;
 	blink::write::param::name(plugin, param_idx, {"Threshold"});
 	blink::write::param::env(plugin, param_idx, env_idx);
-	blink::write::param::override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	return param_idx;
 }
@@ -332,7 +332,7 @@ auto add_param_env_ratio(const blink::Plugin& plugin) -> blink_ParamIdx {
 	blink::write::param::name(plugin, param_idx, {"Ratio"});
 	blink::write::param::env(plugin, param_idx, env_idx);
 	blink::write::param::add_flags(plugin, param_idx, flags);
-	blink::write::param::override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
 	return param_idx;
 }
 
@@ -344,7 +344,7 @@ auto add_param_env_knee(const blink::Plugin& plugin) -> blink_ParamIdx {
 	blink::write::param::name(plugin, param_idx, {"Knee"});
 	blink::write::param::env(plugin, param_idx, env_idx);
 	blink::write::param::add_flags(plugin, param_idx, flags);
-	blink::write::param::override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
 	return param_idx;
 }
 

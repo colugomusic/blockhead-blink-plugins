@@ -18,8 +18,8 @@ auto add_param_env_width(const blink::Plugin& plugin) -> blink_ParamIdx {
 	const auto flags     = blink_ParamFlags_DefaultActive | blink_ParamFlags_CanManipulate;
 	blink::write::param::name(plugin, param_idx, {"Width"});
 	blink::write::param::env(plugin, param_idx, env_idx);
-	blink::write::param::offset_env(plugin, param_idx, env_idx);
-	blink::write::param::override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_offset_env(plugin, param_idx, env_idx);
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	return param_idx;
 }

@@ -242,7 +242,7 @@ auto make_audio_data(const Model& model, const blink_UniformParamData* param_dat
 		out.option.band_on[i]        = blink::make_option_data(model.plugin, param_data, model.params.option.band_on[i]);
 		out.option.band_curve[i]     = blink::make_option_data(model.plugin, param_data, model.params.option.band_curve[i]);
 		out.slider.band_freq[i]      = blink::make_slider_real_data(model.plugin, param_data, model.params.slider.band_freq[i]);
-		out.slider.band_gain[i]       = blink::make_slider_real_data(model.plugin, param_data, model.params.slider.band_gain[i]);
+		out.slider.band_gain[i]      = blink::make_slider_real_data(model.plugin, param_data, model.params.slider.band_gain[i]);
 		out.slider.band_slope[i]     = blink::make_slider_real_data(model.plugin, param_data, model.params.slider.band_slope[i]);
 		out.slider.band_bandwidth[i] = blink::make_slider_real_data(model.plugin, param_data, model.params.slider.band_bandwidth[i]);
 	}
@@ -314,14 +314,14 @@ auto add_band_freq_slider_param(const blink::Plugin& plugin, blink_UUID uuid, co
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	blink::write::param::name(plugin, param_idx, {spec.names.freq.data()});
 	blink::write::param::short_name(plugin, param_idx, {spec.short_names.freq.data()});
-	blink::write::param::offset_env(plugin, param_idx, env_offset_idx);
-	blink::write::param::override_env(plugin, param_idx, env_override_idx);
+	blink::write::param::slider_offset_env(plugin, param_idx, env_offset_idx);
+	blink::write::param::slider_override_env(plugin, param_idx, env_override_idx);
 	return param_idx;
 }
 
 auto add_band_gain_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
-    const auto slider_idx = add_gain_slider(plugin, spec.gain);
+	const auto slider_idx = add_gain_slider(plugin, spec.gain);
 	const auto flags =
 		blink_ParamFlags_CanManipulate |
 		blink_ParamFlags_MovesDisplay |

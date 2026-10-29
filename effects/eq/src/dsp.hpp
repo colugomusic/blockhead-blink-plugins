@@ -119,18 +119,17 @@ auto process(Model* model, UnitDSP* unit_dsp, const blink_VaryingData& varying, 
 		for (size_t i = 0; i < BAND_COUNT; i++) {
 			const auto on = data.option.band_on[i].value > 0;
 			if (on) {
-				// @TODO: do env search for manipulatable sliders.
 				const auto type  = static_cast<band_type>(data.option.band_curve[i].value);
-				const auto freq  = data.slider.band_freq[i].value;
-				const auto gain  = data.slider.band_gain[i].value;
-				const auto slope = data.slider.band_slope[i].value;
-				const auto bw    = data.slider.band_bandwidth[i].value;
+				const auto freq  = blink::search::vec(data.slider.band_freq[i], unit_dsp->block_positions);
+				const auto gain  = blink::search::vec(data.slider.band_gain[i], unit_dsp->block_positions);
+				const auto slope = blink::search::vec(data.slider.band_slope[i], unit_dsp->block_positions);
+				const auto bw    = blink::search::vec(data.slider.band_bandwidth[i], unit_dsp->block_positions);
 				switch (type) {
 					case band_type::band_shelf: { signal.row(ch) = process(&channel.bands[i].band_shelf, signal.constRow(ch), freq, gain, slope, bw, SRf); break; }
 					case band_type::band_pass:  { signal.row(ch) = process(&channel.bands[i].band_pass, signal.constRow(ch), freq, gain, slope, bw, SRf); break; }
 					case band_type::hi_shelf:   { signal.row(ch) = process(&channel.bands[i].hi_shelf, signal.constRow(ch), freq, gain, slope, SRf); break; }
 					case band_type::lo_shelf:   { signal.row(ch) = process(&channel.bands[i].lo_shelf, signal.constRow(ch), freq, gain, slope, SRf); break; }
-					default:                     { break; }
+					default:                    { break; }
 				}
 			}
 		}
@@ -140,7 +139,7 @@ auto process(Model* model, UnitDSP* unit_dsp, const blink_VaryingData& varying, 
 	return BLINK_OK;
 }
 
-auto reset(Model* model, UnitDSP* unit_dsp) -> void {
+auto reset(Model*, UnitDSP* unit_dsp) -> void {
 	for (auto& channel : unit_dsp->channels) {
 		channel = {};
 	}

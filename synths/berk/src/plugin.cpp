@@ -38,8 +38,8 @@ auto add_param_env_buzz(const blink::Plugin& plugin) -> blink_ParamIdx {
 	blink::write::param::clamp_range(model.plugin, param_idx, {-1.0f, 1.0f});
 	blink::write::param::add_flags(model.plugin, param_idx, flags);
 	blink::write::param::env(model.plugin, param_idx, env_idx);
-	blink::write::param::offset_env(model.plugin, param_idx, env_idx);
-	blink::write::param::override_env(model.plugin, param_idx, env_idx);
+	blink::write::param::env_offset_env(model.plugin, param_idx, env_idx);
+	blink::write::param::env_override_env(model.plugin, param_idx, env_idx);
 	return param_idx;
 }
 

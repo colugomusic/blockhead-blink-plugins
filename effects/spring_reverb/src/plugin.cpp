@@ -18,8 +18,8 @@ auto add_param_env_size(const blink::Plugin& plugin) -> blink_ParamIdx {
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	blink::write::param::clamp_range(plugin, param_idx, {0.0f, 1.0f});
 	blink::write::param::env(plugin, param_idx, env_id);
-	blink::write::param::override_env(plugin, param_idx, env_id);
-	blink::write::param::offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
+	blink::write::param::env_override_env(plugin, param_idx, env_id);
+	blink::write::param::env_offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
 	blink::write::env::default_value(plugin, env_id, 0.5f);
 	return param_idx;
 }
@@ -33,8 +33,8 @@ auto add_param_env_decay(const blink::Plugin& plugin) -> blink_ParamIdx {
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	blink::write::param::clamp_range(plugin, param_idx, {0.0f, 1.0f});
 	blink::write::param::env(plugin, param_idx, env_idx);
-	blink::write::param::override_env(plugin, param_idx, env_idx);
-	blink::write::param::offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
 	blink::write::env::default_value(plugin, env_idx, 0.5f);
 	return param_idx;
 }

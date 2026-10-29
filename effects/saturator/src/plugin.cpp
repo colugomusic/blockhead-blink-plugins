@@ -16,8 +16,8 @@ auto add_param_env_drive(const blink::Plugin& plugin) -> blink_ParamIdx {
 	const auto flags     = blink_ParamFlags_CanManipulate | blink_ParamFlags_DefaultActive | blink_ParamFlags_HostClamp;
 	blink::write::param::name(plugin, param_idx, {"Drive"});
 	blink::write::param::env(plugin, param_idx, env_idx);
-	blink::write::param::override_env(plugin, param_idx, env_idx);
-	blink::write::param::offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
+	blink::write::param::env_override_env(plugin, param_idx, env_idx);
+	blink::write::param::env_offset_env(plugin, param_idx, blink::add::env::percentage_bipolar(plugin.host));
 	blink::write::param::clamp_range(plugin, param_idx, {0.0f, 1.0f});
 	blink::write::param::add_flags(plugin, param_idx, flags);
 	return param_idx;
