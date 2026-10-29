@@ -220,7 +220,7 @@ auto quality(const blink::Plugin& plugin) -> blink_ParamIdx {
 	blink::write::param::env_override_env(plugin, param_idx, env_idx);
 	blink::write::param::clamp_range(plugin, param_idx, {0.0f, 2.0f});
 	blink::write::param::add_flags(plugin, param_idx, flags);
-	blink::write::param::apply_offset_fn(plugin, param_idx, [](float value, float offset) { return value + (offset * 2); });
+	blink::write::param::env_apply_offset_fn(plugin, param_idx, [](float value, float offset) { return value + (offset * 2); });
 	return param_idx;
 }
 
