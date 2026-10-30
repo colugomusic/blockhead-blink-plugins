@@ -124,6 +124,8 @@ auto process(Model* model, UnitDSP* unit_dsp, const blink_VaryingData& varying, 
 				const auto gain  = blink::search::vec(data.slider.band_gain[i], unit_dsp->block_positions);
 				const auto slope = blink::search::vec(data.slider.band_slope[i], unit_dsp->block_positions);
 				const auto bw    = blink::search::vec(data.slider.band_bandwidth[i], unit_dsp->block_positions);
+				// @TODO:
+				// const auto smooth_freq = process(&channels.bands[i].smooth_freq, freq);
 				switch (type) {
 					case band_type::band_shelf: { signal.row(ch) = process(&channel.bands[i].band_shelf, signal.constRow(ch), freq, gain, slope, bw, SRf); break; }
 					case band_type::band_pass:  { signal.row(ch) = process(&channel.bands[i].band_pass, signal.constRow(ch), freq, gain, slope, bw, SRf); break; }

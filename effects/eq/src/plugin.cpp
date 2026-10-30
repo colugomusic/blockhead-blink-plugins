@@ -288,6 +288,26 @@ auto add_gain_slider(const blink::Plugin& plugin, float default_value) -> blink_
 	return idx;
 }
 
+auto add_gain_env(const blink::Plugin& plugin) -> blink_EnvIdx {
+	const auto idx = blink::add::env::empty(plugin.host);
+	auto fns = blink_EnvFns{
+		.get_grid_line = [](int index, float* out) -> blink_Bool {
+			*out = blink::math::convert::linear_to_speed(float(index));
+			return {true};
+		},
+		.stepify   = gain_stepify,
+		.to_string = gain_to_string,
+	};
+	blink::write::env::default_max(plugin, idx, 1.0f);
+	blink::write::env::default_min(plugin, idx, 0.0f);
+	blink::write::env::default_value(plugin, idx, 0.5f);
+	blink::write::env::fns(plugin, idx, fns);
+	blink::write::env::max_slider(plugin, idx, add_gain_slider(plugin, 1.0f));
+	blink::write::env::min_slider(plugin, idx, add_gain_slider(plugin, 0.0f));
+	blink::write::env::value_slider(plugin, idx, add_gain_slider(plugin, 0.5f));
+	return idx;
+}
+
 auto add_band_on_option_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
 	const auto param_idx  = blink::add::param::option(plugin, uuid);
 	const auto flags =
@@ -320,8 +340,11 @@ auto add_band_freq_slider_param(const blink::Plugin& plugin, blink_UUID uuid, co
 }
 
 auto add_band_gain_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
-	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
-	const auto slider_idx = add_gain_slider(plugin, spec.gain);
+	const auto param_idx        = blink::add::param::slider_real(plugin, uuid);
+	const auto slider_idx       = add_gain_slider(plugin, spec.gain);
+	const auto env_offset_idx   = add_gain_env(plugin);
+	const auto env_override_idx = add_gain_env(plugin);
+	const auto apply_offset_fn  = [](float value, float offset) -> float { return convert::gain_db_to_raw(convert::raw_to_gain_db(value) + convert::raw_to_gain_db(offset)); };
 	const auto flags =
 		blink_ParamFlags_CanManipulate |
 		blink_ParamFlags_MovesDisplay |
@@ -330,12 +353,17 @@ auto add_band_gain_slider_param(const blink::Plugin& plugin, blink_UUID uuid, co
 	blink::write::param::name(plugin, param_idx, {spec.names.gain.data()});
 	blink::write::param::short_name(plugin, param_idx, {spec.short_names.gain.data()});
 	blink::write::param::add_flags(plugin, param_idx, flags);
+	blink::write::param::slider_offset_env(plugin, param_idx, env_offset_idx);
+	blink::write::param::slider_override_env(plugin, param_idx, env_override_idx);
+	blink::write::param::slider_apply_offset_fn(plugin, param_idx, apply_offset_fn);
 	return param_idx;
 }
 
 auto add_band_slope_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
-	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
-	const auto slider_idx = blink::add::slider::percentage(plugin.host);
+	const auto param_idx        = blink::add::param::slider_real(plugin, uuid);
+	const auto slider_idx       = blink::add::slider::percentage(plugin.host);
+	const auto env_offset_idx   = blink::add::env::percentage_bipolar(plugin.host);
+	const auto env_override_idx = blink::add::env::percentage(plugin.host);
 	const auto flags =
 		blink_ParamFlags_CanManipulate |
 		blink_ParamFlags_MovesDisplay |
@@ -345,12 +373,16 @@ auto add_band_slope_slider_param(const blink::Plugin& plugin, blink_UUID uuid, c
 	blink::write::param::name(plugin, param_idx, {spec.names.slope.data()});
 	blink::write::param::short_name(plugin, param_idx, {spec.short_names.slope.data()});
 	blink::write::param::add_flags(plugin, param_idx, flags);
+	blink::write::param::slider_offset_env(plugin, param_idx, env_offset_idx);
+	blink::write::param::slider_override_env(plugin, param_idx, env_override_idx);
 	return param_idx;
 }
 
 auto add_band_bandwidth_slider_param(const blink::Plugin& plugin, blink_UUID uuid, const band_spec& spec) -> blink_ParamIdx {
-	const auto param_idx  = blink::add::param::slider_real(plugin, uuid);
-	const auto slider_idx = blink::add::slider::percentage(plugin.host);
+	const auto param_idx        = blink::add::param::slider_real(plugin, uuid);
+	const auto slider_idx       = blink::add::slider::percentage(plugin.host);
+	const auto env_offset_idx   = blink::add::env::percentage_bipolar(plugin.host);
+	const auto env_override_idx = blink::add::env::percentage(plugin.host);
 	const auto flags =
 		blink_ParamFlags_CanManipulate |
 		blink_ParamFlags_MovesDisplay |
@@ -360,6 +392,8 @@ auto add_band_bandwidth_slider_param(const blink::Plugin& plugin, blink_UUID uui
 	blink::write::param::name(plugin, param_idx, {spec.names.bandwidth.data()});
 	blink::write::param::short_name(plugin, param_idx, {spec.short_names.bandwidth.data()});
 	blink::write::param::add_flags(plugin, param_idx, flags);
+	blink::write::param::slider_offset_env(plugin, param_idx, env_offset_idx);
+	blink::write::param::slider_override_env(plugin, param_idx, env_override_idx);
 	return param_idx;
 }
 

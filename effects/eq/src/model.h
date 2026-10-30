@@ -1,6 +1,7 @@
 #pragma once
 
 #include "filters.hpp"
+#include <MLDSPGens.h>
 #include <blink/plugin-impl.hpp>
 #include <variant>
 
@@ -51,6 +52,8 @@ struct band_dsp {
 	band_pass_filter band_pass;
 	hi_shelf_filter hi_shelf;
 	lo_shelf_filter lo_shelf;
+	// @TODO: write some kind of smoother
+	//smoother smooth_freq;
 };
 
 struct channel_dsp {
