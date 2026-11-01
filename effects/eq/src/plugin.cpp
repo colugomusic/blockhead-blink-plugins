@@ -503,6 +503,7 @@ auto blink_get_plugin_info() -> blink_PluginInfo {
 	out.category = {BLINK_STD_CATEGORY_FILTERS};
 	out.version  = {PLUGIN_VERSION};
 	out.has_icon = {false};
+	out.spectral = {true};
 	return out;
 }
 
