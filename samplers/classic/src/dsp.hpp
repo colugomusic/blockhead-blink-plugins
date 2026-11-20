@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <blink/dsp.hpp>
 #include <blink/sample_data.hpp>
 #include <blink/search.hpp>
@@ -117,35 +118,39 @@ auto apply_correction_grains(
 	auto grains_remaining = grain_info.count;
 	snd::frame_vec<64> grain_positions;
 	ml::DSPVector xfade;
+	auto& grain = reverse_correction->grain;
 	for (int i = 0; i < BLINK_VECTOR_SIZE; i++) {
-		if (reverse_correction->grain.on) {
-			reverse_correction->grain.pos += reverse_correction->grain.ff;
-			reverse_correction->grain.vpos += reverse_correction->grain.vff;
-			grain_positions.set(i, reverse_correction->grain.pos);
-			xfade[i] = snd::easing::quadratic::in_out(snd::inverse_lerp(reverse_correction->grain.beg, reverse_correction->grain.vend, reverse_correction->grain.vpos));
-			if (reverse_correction->grain.vpos >= reverse_correction->grain.vend) reverse_correction->grain.on = false;
+		if (!grain.on && grains_remaining > 0 && i == grain_info.buffer_index[grain_info.count - grains_remaining]) {
+			// The dry signal jumps at this frame. The grain continues on from
+			// where the dry signal was on the previous frame.
+			const auto beg = i == 0 ? reverse_correction->dry_positions.prev_pos : reverse_correction->dry_positions[i - 1];
+			// Block positions advance by (scale * song_rate / SR) per output
+			// frame, so the grain must too, otherwise it plays back at the
+			// unscaled speed when the block is stretched or squashed.
+			const auto frames_to_block_positions = double(uniform.base.scale) * double(uniform.base.song_rate.value) / double(SR.value);
+			grain.on   = true;
+			grain.beg  = beg;
+			grain.pos  = beg;
+			grain.ff   = double(grain_info.ff[i]) * frames_to_block_positions;
+			grain.vpos = beg;
+			grain.vend = double(beg) + double(grain_info.length[i]);
+			// The grain length is in block positions, so scale the crossfade
+			// speed too, to keep it the same proportion of the segment.
+			grain.vff  = std::abs(double(grain_info.ff[i])) * double(uniform.base.scale);
+			grains_remaining--;
+		}
+		if (grain.on) {
+			// Advance before reading so that the grain's first frame is one
+			// step on from the last dry frame, rather than a repeat of it.
+			grain.pos  += grain.ff;
+			grain.vpos += grain.vff;
+			grain_positions.set(i, snd::frame_pos{grain.pos});
+			const auto t = std::clamp(snd::inverse_lerp(grain.beg, grain.vend, grain.vpos), 0.0, 1.0);
+			xfade[i] = float(snd::easing::quadratic::in_out(t));
+			if (grain.vpos >= grain.vend) grain.on = false;
 		}
 		else {
 			xfade[i] = 1.0f;
-			if (grains_remaining > 0 && i == grain_info.buffer_index[grain_info.count - grains_remaining]) {
-				reverse_correction->grain.on = true;
-				const auto beg = i == 0 ? reverse_correction->dry_positions.prev_pos : reverse_correction->dry_positions[i - 1];
-				// Block positions advance by (scale * song_rate / SR) per output
-				// frame, so the grain must too, otherwise it plays back at the
-				// unscaled speed when the block is stretched or squashed.
-				const auto frames_to_block_positions = uniform.base.scale * float(uniform.base.song_rate.value) / SR.value;
-				reverse_correction->grain.beg = beg;
-				reverse_correction->grain.pos = beg;
-				reverse_correction->grain.ff = grain_info.ff[i] * frames_to_block_positions;
-				reverse_correction->grain.vpos = beg;
-				reverse_correction->grain.vend = float(double(beg)) + grain_info.length[i];
-				// The grain length is in block positions, so scale the crossfade
-				// speed too, to keep it the same proportion of the segment.
-				reverse_correction->grain.vff = std::abs(grain_info.ff[i]) * uniform.base.scale;
-				grain_positions.set(i, reverse_correction->grain.pos);
-				xfade[i] = snd::easing::quadratic::in_out(snd::inverse_lerp(reverse_correction->grain.beg, reverse_correction->grain.vend, reverse_correction->grain.vpos));
-				grains_remaining--;
-			}
 		}
 	}
 	ml::DSPVectorArray<2> out;

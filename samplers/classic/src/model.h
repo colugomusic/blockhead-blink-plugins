@@ -33,13 +33,13 @@ struct Params {
 
 struct ReverseCorrection {
 	struct Grain {
-		bool on    = false;
-		float beg  = 0.0f;
-		float pos  = 0.0f;
-		float ff   = 0.0f;
-		float vpos = 0.0f;
-		float vend = 0.0f;
-		float vff  = 0.0f;
+		bool on     = false;
+		double beg  = 0.0;
+		double pos  = 0.0;
+		double ff   = 0.0;
+		double vpos = 0.0;
+		double vend = 0.0;
+		double vff  = 0.0;
 	} grain;
 	blink::BlockPositions dry_positions;
 };
