@@ -119,7 +119,6 @@ auto apply_correction_grains(
 	ml::DSPVector xfade;
 	for (int i = 0; i < BLINK_VECTOR_SIZE; i++) {
 		if (reverse_correction->grain.on) {
-			// TODO: multiply by scale here???
 			reverse_correction->grain.pos += reverse_correction->grain.ff;
 			reverse_correction->grain.vpos += reverse_correction->grain.vff;
 			grain_positions.set(i, reverse_correction->grain.pos);
@@ -131,15 +130,18 @@ auto apply_correction_grains(
 			if (grains_remaining > 0 && i == grain_info.buffer_index[grain_info.count - grains_remaining]) {
 				reverse_correction->grain.on = true;
 				const auto beg = i == 0 ? reverse_correction->dry_positions.prev_pos : reverse_correction->dry_positions[i - 1];
-				// i hate math
-				const auto a = float(uniform.base.song_rate.value) / varying.sample_info->SR.value;
-				const auto b = float(varying.sample_info->SR.value) / SR.value;
+				// Block positions advance by (scale * song_rate / SR) per output
+				// frame, so the grain must too, otherwise it plays back at the
+				// unscaled speed when the block is stretched or squashed.
+				const auto frames_to_block_positions = uniform.base.scale * float(uniform.base.song_rate.value) / SR.value;
 				reverse_correction->grain.beg = beg;
 				reverse_correction->grain.pos = beg;
-				reverse_correction->grain.ff = grain_info.ff[i] * a * b;
+				reverse_correction->grain.ff = grain_info.ff[i] * frames_to_block_positions;
 				reverse_correction->grain.vpos = beg;
 				reverse_correction->grain.vend = float(double(beg)) + grain_info.length[i];
-				reverse_correction->grain.vff = std::abs(grain_info.ff[i]);
+				// The grain length is in block positions, so scale the crossfade
+				// speed too, to keep it the same proportion of the segment.
+				reverse_correction->grain.vff = std::abs(grain_info.ff[i]) * uniform.base.scale;
 				grain_positions.set(i, reverse_correction->grain.pos);
 				xfade[i] = snd::easing::quadratic::in_out(snd::inverse_lerp(reverse_correction->grain.beg, reverse_correction->grain.vend, reverse_correction->grain.vpos));
 				grains_remaining--;
