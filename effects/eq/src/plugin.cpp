@@ -265,7 +265,7 @@ auto gain_from_string(const char* str, float* out) -> blink_Bool {
 
 auto gain_to_string(float v, char buffer[BLINK_STRING_MAX]) -> void {
 	auto ss = std::stringstream{};
-	ss << convert::raw_to_gain_db(v) << " dB";
+	ss << tweak::math::stepify<100>(convert::raw_to_gain_db(v)) << " dB";
 	blink::tweak::write_string(ss.str(), buffer);
 }
 
