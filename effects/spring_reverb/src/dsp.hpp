@@ -1,7 +1,9 @@
 #pragma once
 
 #include "model.h"
+#include <MLDSPOps.h>
 #include <blink/search.hpp>
+#include <block_positions.hpp>
 
 namespace spring_reverb {
 namespace dsp {
@@ -25,6 +27,15 @@ auto make_audio_data(const Model& model, const blink_UniformParamData* param_dat
 	out.env.size  = blink::make_env_data(model.plugin, param_data, model.params.env.size);
 	out.env.mix   = blink::make_env_data(model.plugin, param_data, model.params.env.mix);
 	return out;
+}
+
+[[nodiscard]]
+auto make_input_ramp(int frame_count, float SR) -> ml::DSPVector {
+	const auto ramp_samples = 0.01f * SR;
+	const auto ramp_begin   = ml::DSPVector{0.0f};
+	const auto ramp_end     = ml::DSPVector{ramp_samples};
+	const auto frame_ramp   = ml::columnIndex() + frame_count;
+	return ml::clamp(ml::inverseLerp(ramp_begin, ramp_end, frame_ramp), ml::DSPVector{0.0f}, ml::DSPVector{1.0f});
 }
 
 // This is adapted from code taken from madronalib. Thank you Randy!
@@ -65,9 +76,12 @@ auto process(Model* model, UnitDSP* unit_dsp, const blink_VaryingData& varying, 
 	ml::DSPVector vt8 = max(0.090f * delayParamInSamples, vMin);
 	ml::DSPVector vt9 = max(0.111f * delayParamInSamples, vMin);
 	ml::DSPVector vt10 = max(0.096f * delayParamInSamples, vMin);
-	ml::DSPVectorArray<2> in_vec(in);
+	const auto in_vec    = ml::DSPVectorArray<2>{in};
+	const auto in_ramp   = make_input_ramp(unit_dsp->frame_count, sr);
+	const auto in_ramped = in_vec * ml::repeatRows<2>(in_ramp);
+	const auto final_mix = mix * in_ramp;
 	// sum stereo inputs and diffuse with four allpass filters in series
-	ml::DSPVector monoInput = (in_vec.constRow(0) + in_vec.constRow(1));
+	ml::DSPVector monoInput = (in_ramped.constRow(0) + in_ramped.constRow(1));
 	ml::DSPVector diffusedInput = unit_dsp->ap4(unit_dsp->ap3(unit_dsp->ap2(unit_dsp->ap1(monoInput, vt1), vt2), vt3), vt4);
 	// get delay times in samples, subtracting the constant delay of one DSPVector and clamping to zero
 	ml::DSPVector vDelayTimeL = max(0.0313f * delayParamInSamples - vMin, ml::DSPVector(0.f));
@@ -79,9 +93,10 @@ auto process(Model* model, UnitDSP* unit_dsp, const blink_VaryingData& varying, 
 	unit_dsp->feedbackR = unit_dsp->ap9(vTapL, vt9) * vSmoothFeedback;
 	unit_dsp->feedbackL = unit_dsp->ap10(vTapR, vt10) * vSmoothFeedback;
 	// append the left and right taps and return the stereo output
-	const auto out_vec = ml::lerp(in_vec, ml::concatRows(vTapL, vTapR), ml::repeatRows<2>(mix));
+	const auto out_vec = ml::lerp(in_vec, ml::concatRows(vTapL, vTapR), ml::repeatRows<2>(final_mix));
 	ml::storeAligned(out_vec.constRow(0), out);
 	ml::storeAligned(out_vec.constRow(1), out + kFloatsPerDSPVector);
+	unit_dsp->frame_count += kFloatsPerDSPVector;
 	return BLINK_OK;
 }
 
@@ -122,6 +137,7 @@ auto reset(Model* model, UnitDSP* unit_dsp) -> void {
 	unit_dsp->delayR.clear();
 	unit_dsp->feedbackL = ml::DSPVector();
 	unit_dsp->feedbackR = ml::DSPVector();
+	unit_dsp->frame_count = 0;
 }
 
 } // namespace dsp

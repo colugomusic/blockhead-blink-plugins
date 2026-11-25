@@ -23,6 +23,7 @@ struct UnitDSP {
 	ml::Allpass<ml::PitchbendableDelay> ap5, ap6, ap7, ap8, ap9, ap10;
 	ml::PitchbendableDelay delayL, delayR;
 	ml::DSPVector feedbackL, feedbackR;
+	int frame_count = 0;
 	int buffer_count = 0;
 };
 
